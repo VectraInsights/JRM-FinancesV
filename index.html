@@ -12,19 +12,10 @@
         body { background-color: var(--st-bg); color: var(--st-text); font-family: 'Source Sans Pro', sans-serif; margin: 0; padding: 0; }
         .full-container { width: 98%; margin: 0 auto; padding: 1rem 0; }
         
-        /* Menu Flutuante Estilo Streamlit */
         #filter-menu { 
-            display: none; 
-            position: absolute; 
-            right: 20px; 
-            top: 60px; 
-            background: #262730; 
-            border: 1px solid var(--st-border); 
-            border-radius: 12px; 
-            padding: 20px; 
-            z-index: 1000; 
-            width: 320px; 
-            box-shadow: 0 15px 50px rgba(0,0,0,0.6); 
+            display: none; position: absolute; right: 20px; top: 60px; 
+            background: #262730; border: 1px solid var(--st-border); border-radius: 12px; 
+            padding: 20px; z-index: 1000; width: 320px; box-shadow: 0 15px 50px rgba(0,0,0,0.6); 
         }
         
         .st-btn-icon { background: #262730; border: 1px solid var(--st-border); border-radius: 4px; padding: 6px; cursor: pointer; color: white; }
@@ -34,15 +25,7 @@
         .block-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; }
         .st-select { background: #0e1117; border: 1px solid var(--st-border); color: white; padding: 0.4rem; border-radius: 4px; font-size: 0.85rem; }
         
-        .action-btn { 
-            background: transparent; 
-            border: 1px solid var(--st-border); 
-            color: white; 
-            padding: 4px 12px; 
-            border-radius: 6px; 
-            font-size: 13px;
-            transition: all 0.2s;
-        }
+        .action-btn { background: transparent; border: 1px solid var(--st-border); color: white; padding: 4px 12px; border-radius: 6px; font-size: 13px; transition: all 0.2s; }
         .action-btn:hover { border-color: #ff4b4b; color: #ff4b4b; }
 
         input[type="radio"], input[type="checkbox"] { accent-color: #ff4b4b; cursor: pointer; }
@@ -128,20 +111,36 @@
                 <div class="text-sm opacity-60 mb-2">Resumo consolidado por tipo de receita</div>
                 <hr class="border-white/10 mb-4">
                 <div class="max-h-[400px] overflow-y-auto">
-                    <table><thead><tr><th>Receita</th><th class="val-col">Valor</th></tr></thead><tbody id="tab-receitas-body"></tbody></table>
+                    <table>
+                        <thead><tr><th>Receita</th><th class="val-col">Valor</th></tr></thead>
+                        <tbody id="tab-receitas-body"></tbody>
+                    </table>
                 </div>
             </div>
+
             <div class="st-block">
-                <div class="flex justify-between items-center mb-2">
+                <div class="flex justify-between items-start mb-2">
                     <div>
                         <div class="block-title">📄 Detalhe Despesas</div>
-                        <div class="text-sm opacity-60">Detalhamento por categoria</div>
+                        <div class="text-sm opacity-60">Resumo e detalhamento por setor e categoria</div>
                     </div>
-                    <select id="filtro-setor-especifico" onchange="renderUI()" class="st-select w-48"></select>
+                    <select id="modo-visao-despesa" onchange="renderUI()" class="st-select">
+                        <option value="setor">Resumo por setor</option>
+                        <option value="categoria">Categorias de um setor</option>
+                    </select>
                 </div>
+                
+                <div id="container-seletor-setor" class="mt-2 mb-4" style="display:none;">
+                    <label class="text-xs opacity-50 block mb-1">Selecione o Setor:</label>
+                    <select id="filtro-setor-especifico" onchange="renderUI()" class="st-select w-full"></select>
+                </div>
+
                 <hr class="border-white/10 mb-4">
                 <div class="max-h-[400px] overflow-y-auto">
-                    <table><thead><tr><th>Categoria</th><th class="val-col">Valor</th></tr></thead><tbody id="tab-despesas-body"></tbody></table>
+                    <table>
+                        <thead><tr id="tab-despesas-header"><th>Setor</th><th class="val-col">Valor</th></tr></thead>
+                        <tbody id="tab-despesas-body"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -153,9 +152,7 @@
         const PALETA_ST = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#FECB52', '#FF97FF'];
         const fmtBR = v => (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-        // Fechar menu ao clicar fora
         window.addEventListener('click', () => { document.getElementById('filter-menu').style.display = 'none'; });
-        
         function toggleFilters() {
             const m = document.getElementById('filter-menu');
             m.style.display = m.style.display === 'block' ? 'none' : 'block';
@@ -182,6 +179,7 @@
                 .map(m => `<label class="flex items-center gap-2"><input type="checkbox" value="${m}" checked onchange="renderUI()"> ${m}</label>`)
                 .join('');
             
+            // Popula os setores sempre em ordem alfabética
             const anoKey = (visao === "comparativo" || visao === "2026") ? "ano_2026" : "ano_2025";
             const setores = [...new Set(rawData[anoKey].despesas_res.map(d => d.Setor))].sort();
             document.getElementById('filtro-setor-especifico').innerHTML = setores.map(s => `<option value="${s}">${s}</option>`).join('');
@@ -195,22 +193,9 @@
             const mesesSel = Array.from(document.querySelectorAll('#meses-container input:checked')).map(i => i.value);
             document.getElementById('display-periodo').innerHTML = `Período: ${mesesSel.join(', ') || 'Nenhum mês selecionado'}`;
 
-            const mainContainer = document.getElementById('main-charts-container');
-            const tendenciaSecao = document.getElementById('secao-tendencia');
-            const tabelasSecao = document.getElementById('secao-tabelas');
-            const detContainer = document.getElementById('detalhe-despesas-container');
-
             if (visao === 'comparativo') {
-                tendenciaSecao.style.display = 'none';
-                tabelasSecao.style.display = 'none';
-                detContainer.style.display = 'none';
-                mainContainer.className = "grid grid-cols-1 lg:grid-cols-3 gap-4 px-4";
                 renderModoComparativo(mesesSel);
             } else {
-                tendenciaSecao.style.display = 'block';
-                tabelasSecao.style.display = 'grid';
-                detContainer.style.display = 'block';
-                mainContainer.className = "grid grid-cols-1 lg:grid-cols-2 gap-4 px-4";
                 renderModoIndividual(visao, mesesSel);
             }
         }
@@ -220,6 +205,11 @@
             const r = dados.receitas.filter(d => meses.includes(d.Mes));
             const dr = dados.despesas_res.filter(d => meses.includes(d.Mes));
             const dd = dados.despesas_det.filter(d => meses.includes(d.Mes));
+
+            document.getElementById('main-charts-container').className = "grid grid-cols-1 lg:grid-cols-2 gap-4 px-4";
+            document.getElementById('secao-tendencia').style.display = 'block';
+            document.getElementById('detalhe-despesas-container').style.display = 'block';
+            document.getElementById('secao-tabelas').style.display = 'grid';
 
             atualizarKPI("fat", r.reduce((a,b)=>a+b.Valor,0), null, null);
             atualizarKPI("des", dr.reduce((a,b)=>a+b.Valor,0), null, null);
@@ -234,14 +224,33 @@
             renderTendencia(r, dr, meses);
             renderTopBarras(dd);
             
+            // Tabelas
             fillTable('tab-receitas-body', aggregate(r, 'Receita'), true);
-            const setorSel = document.getElementById('filtro-setor-especifico').value;
-            fillTable('tab-despesas-body', aggregate(dd.filter(d => d.Setor === setorSel), 'Categoria'), true);
+            
+            const modo = document.getElementById('modo-visao-despesa').value;
+            const containerSetor = document.getElementById('container-seletor-setor');
+            const header = document.getElementById('tab-despesas-header');
+
+            if (modo === 'setor') {
+                containerSetor.style.display = 'none';
+                header.innerHTML = '<th>Setor</th><th class="val-col">Valor</th>';
+                fillTable('tab-despesas-body', aggregate(dr, 'Setor'), true);
+            } else {
+                containerSetor.style.display = 'block';
+                const setorSel = document.getElementById('filtro-setor-especifico').value;
+                header.innerHTML = '<th>Categoria</th><th class="val-col">Valor</th>';
+                fillTable('tab-despesas-body', aggregate(dd.filter(d => d.Setor === setorSel), 'Categoria'), true);
+            }
         }
 
         function renderModoComparativo(meses) {
             const d26 = rawData.ano_2026; const d25 = rawData.ano_2025;
             const somar = (lista) => lista.filter(d => meses.includes(d.Mes)).reduce((a, b) => a + b.Valor, 0);
+
+            document.getElementById('main-charts-container').className = "grid grid-cols-1 lg:grid-cols-3 gap-4 px-4";
+            document.getElementById('secao-tendencia').style.display = 'none';
+            document.getElementById('detalhe-despesas-container').style.display = 'none';
+            document.getElementById('secao-tabelas').style.display = 'none';
 
             atualizarKPI("fat", somar(d26.receitas), somar(d25.receitas), "2025");
             atualizarKPI("des", somar(d26.despesas_res), somar(d25.despesas_res), "2025");
@@ -252,18 +261,13 @@
                 <div class="st-block"><h3>Despesas</h3><div id="c-des" style="height: 320px;"></div></div>
                 <div class="st-block"><h3>Resultado</h3><div id="c-res" style="height: 320px;"></div></div>`;
 
-            // Timeout para evitar bug de barras gigantes no comparativo
             setTimeout(() => {
                 const getS = (dados, m) => m.map(mes => dados.filter(x => x.Mes === mes).reduce((a, b) => a + b.Valor, 0));
                 const plotComp = (id, s25, s26, cor) => {
                     Plotly.newPlot(id, [
                         { x: meses, y: s25, name: '2025', type: 'bar', marker: { color: '#94A3B8' } },
                         { x: meses, y: s26, name: '2026', type: 'bar', marker: { color: cor } }
-                    ], { 
-                        barmode: 'group', paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', 
-                        font: { color: '#fff' }, margin: { t: 20, b: 40, l: 40, r: 10 }, 
-                        showlegend: false, xaxis: { automargin: true }, yaxis: { automargin: true, tickformat: '.2s' } 
-                    }, { displayModeBar: false, responsive: true });
+                    ], { barmode: 'group', paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: { color: '#fff' }, margin: { t: 20, b: 40, l: 40, r: 10 }, showlegend: false, xaxis: { automargin: true }, yaxis: { automargin: true, tickformat: '.2s' } }, { displayModeBar: false, responsive: true });
                 };
                 plotComp('c-fat', getS(d25.receitas, meses), getS(d26.receitas, meses), '#22c55e');
                 plotComp('c-des', getS(d25.despesas_res, meses), getS(d26.despesas_res, meses), '#ff4b4b');
