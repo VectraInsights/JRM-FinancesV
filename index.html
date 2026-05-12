@@ -95,12 +95,7 @@
                 <hr class="border-white/10 mb-4">
                 <div class="max-h-[400px] overflow-y-auto">
                     <table>
-                        <thead>
-                            <tr>
-                                <th>Receita</th>
-                                <th class="val-col">Valor</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>Receita</th><th class="val-col">Valor</th></tr></thead>
                         <tbody id="tab-receitas-body"></tbody>
                     </table>
                 </div>
@@ -116,15 +111,13 @@
                         <option value="categoria">Categorias de um setor</option>
                     </select>
                 </div>
+                <div id="container-filtro-setor" class="mb-4" style="display:none;">
+                    <select id="filtro-setor-especifico" onchange="renderUI()" class="st-select w-full md:w-64"></select>
+                </div>
                 <hr class="border-white/10 mb-4">
                 <div class="max-h-[400px] overflow-y-auto">
                     <table>
-                        <thead>
-                            <tr id="tab-despesas-header">
-                                <th>Setor</th>
-                                <th class="val-col">Valor</th>
-                            </tr>
-                        </thead>
+                        <thead><tr id="tab-despesas-header"><th>Setor</th><th class="val-col">Valor</th></tr></thead>
                         <tbody id="tab-despesas-body"></tbody>
                     </table>
                 </div>
@@ -152,6 +145,13 @@
             const ativos = (visao === "2025") ? rawData.meses_disponiveis_2025 : rawData.meses_disponiveis_2026;
             document.getElementById('meses-container').innerHTML = MESES_ORDEM.filter(m => ativos.includes(m))
                 .map(m => `<label class="flex items-center gap-2 cursor-pointer py-1 hover:bg-white/5 rounded px-2"><input type="checkbox" value="${m}" checked onchange="renderUI()"> ${m}</label>`).join('');
+            
+            // Popular o dropdown de setores disponíveis (ORDEM ALFABÉTICA)
+            const ano = visao === "comparativo" ? "ano_2026" : `ano_${visao}`;
+            const setoresUnicos = [...new Set(rawData[ano].despesas_res.map(d => d.Setor))].sort();
+            const selectSetor = document.getElementById('filtro-setor-especifico');
+            selectSetor.innerHTML = setoresUnicos.map(s => `<option value="${s}">${s}</option>`).join('');
+            
             renderUI();
         }
 
@@ -167,15 +167,11 @@
             const detContainer = document.getElementById('detalhe-despesas-container');
 
             if (visao === 'comparativo') {
-                tendenciaSecao.style.display = 'none';
-                tabelasSecao.style.display = 'none';
-                detContainer.style.display = 'none';
+                tendenciaSecao.style.display = 'none'; tabelasSecao.style.display = 'none'; detContainer.style.display = 'none';
                 mainContainer.className = "grid grid-cols-1 lg:grid-cols-3 gap-4 px-4";
                 renderModoComparativo(mesesSel);
             } else {
-                tendenciaSecao.style.display = 'block';
-                tabelasSecao.style.display = 'grid';
-                detContainer.style.display = 'block';
+                tendenciaSecao.style.display = 'block'; tabelasSecao.style.display = 'grid'; detContainer.style.display = 'block';
                 mainContainer.className = "grid grid-cols-1 lg:grid-cols-2 gap-4 px-4";
                 renderModoIndividual(visao, mesesSel);
             }
@@ -187,61 +183,66 @@
             const dr = dados.despesas_res.filter(d => meses.includes(d.Mes));
             const dd = dados.despesas_det.filter(d => meses.includes(d.Mes));
 
-            const totalR = r.reduce((a,b) => a+b.Valor, 0);
-            const totalD = dr.reduce((a,b) => a+b.Valor, 0);
-
-            atualizarKPI("fat", totalR, null, null);
-            atualizarKPI("des", totalD, null, null);
-            atualizarKPI("res", totalR - totalD, null, null);
+            atualizarKPI("fat", r.reduce((a,b)=>a+b.Valor,0), null, null);
+            atualizarKPI("des", dr.reduce((a,b)=>a+b.Valor,0), null, null);
+            atualizarKPI("res", r.reduce((a,b)=>a+b.Valor,0) - dr.reduce((a,b)=>a+b.Valor,0), null, null);
 
             document.getElementById('main-charts-container').innerHTML = `
                 <div class="st-block"><div class="block-title">Receitas</div><div id="chart-1" class="h-[400px]"></div></div>
-                <div class="st-block"><div class="block-title">Despesas</div><div id="chart-2" class="h-[400px]"></div></div>
-            `;
+                <div class="st-block"><div class="block-title">Despesas</div><div id="chart-2" class="h-[400px]"></div></div>`;
 
             renderPie('chart-1', aggregate(r, 'Receita'));
             renderPie('chart-2', aggregate(dr, 'Setor'));
             renderTendencia(r, dr, meses);
             renderTopBarras(dd);
             
-            // Lógica de Preenchimento das Tabelas
-            fillTable('tab-receitas-body', aggregate(r, 'Receita'));
+            // TABELA RECEITAS (ORDEM ALFABÉTICA)
+            fillTable('tab-receitas-body', aggregate(r, 'Receita'), true);
             
+            // TABELA DESPESAS COM LÓGICA DE SETOR ESPECÍFICO
             const modoTabela = document.getElementById('filtro-tabela-despesas').value;
+            const containerSetor = document.getElementById('container-filtro-setor');
             const headerDespesa = document.getElementById('tab-despesas-header');
+
             if (modoTabela === 'setor') {
+                containerSetor.style.display = 'none';
                 headerDespesa.innerHTML = '<th>Setor</th><th class="val-col">Valor</th>';
-                fillTable('tab-despesas-body', aggregate(dr, 'Setor'));
+                fillTable('tab-despesas-body', aggregate(dr, 'Setor'), true);
             } else {
+                containerSetor.style.display = 'block';
+                const setorSel = document.getElementById('filtro-setor-especifico').value;
+                const ddFiltrado = dd.filter(d => d.Setor === setorSel);
                 headerDespesa.innerHTML = '<th>Categoria</th><th class="val-col">Valor</th>';
-                fillTable('tab-despesas-body', aggregate(dd, 'Categoria'));
+                fillTable('tab-despesas-body', aggregate(ddFiltrado, 'Categoria'), true);
             }
         }
 
+        function fillTable(id, data, alfabetica = false) {
+            const body = document.getElementById(id);
+            let items = Object.entries(data);
+            // Ordenação: Alfabética (se solicitado) ou por Valor (padrão)
+            if (alfabetica) {
+                items.sort((a, b) => a[0].localeCompare(b[0]));
+            } else {
+                items.sort((a, b) => b[1] - a[1]);
+            }
+            body.innerHTML = items.map(([k, v]) => `<tr><td>${k}</td><td class="val-col">R$ ${fmtBR(v)}</td></tr>`).join('');
+        }
+
+        // --- (Restante das funções de gráfico permanecem iguais) ---
+
         function renderModoComparativo(meses) {
-            const d26 = rawData.ano_2026;
-            const d25 = rawData.ano_2025;
+            const d26 = rawData.ano_2026; const d25 = rawData.ano_2025;
             const somar = (lista) => lista.filter(d => meses.includes(d.Mes)).reduce((a,b) => a+b.Valor, 0);
-
-            const tot26 = { r: somar(d26.receitas), d: somar(d26.despesas_res) };
-            const tot25 = { r: somar(d25.receitas), d: somar(d25.despesas_res) };
-
-            atualizarKPI("fat", tot26.r, tot25.r, "2025");
-            atualizarKPI("des", tot26.d, tot25.d, "2025");
-            atualizarKPI("res", tot26.r - tot26.d, tot25.r - tot25.d, "2025");
-
+            atualizarKPI("fat", somar(d26.receitas), somar(d25.receitas), "2025");
+            atualizarKPI("des", somar(d26.despesas_res), somar(d25.despesas_res), "2025");
+            atualizarKPI("res", somar(d26.receitas)-somar(d26.despesas_res), somar(d25.receitas)-somar(d25.despesas_res), "2025");
             document.getElementById('main-charts-container').innerHTML = `
                 <div class="st-block"><h3>Faturamento</h3><div id="c-fat" class="h-80"></div></div>
                 <div class="st-block"><h3>Despesas</h3><div id="c-des" class="h-80"></div></div>
-                <div class="st-block"><h3>Resultado</h3><div id="c-res" class="h-80"></div></div>
-            `;
-
+                <div class="st-block"><h3>Resultado</h3><div id="c-res" class="h-80"></div></div>`;
             const getS = (dados, m) => m.map(mes => dados.filter(x => x.Mes === mes).reduce((a,b) => a+b.Valor, 0));
-            const plot = (id, s25, s26, cor) => Plotly.newPlot(id, [
-                { x: meses, y: s25, name: '2025', type: 'bar', marker: {color: '#94A3B8'} },
-                { x: meses, y: s26, name: '2026', type: 'bar', marker: {color: cor} }
-            ], { barmode: 'group', paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: {color: '#fff'}, margin: {t:20, b:40, l:40, r:10}, showlegend: false }, {displayModeBar: false});
-
+            const plot = (id, s25, s26, cor) => Plotly.newPlot(id, [{ x: meses, y: s25, name: '2025', type: 'bar', marker: {color: '#94A3B8'} },{ x: meses, y: s26, name: '2026', type: 'bar', marker: {color: cor} }], { barmode: 'group', paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: {color: '#fff'}, margin: {t:20, b:40, l:40, r:10}, showlegend: false }, {displayModeBar: false});
             plot('c-fat', getS(d25.receitas, meses), getS(d26.receitas, meses), '#22c55e');
             plot('c-des', getS(d25.despesas_res, meses), getS(d26.despesas_res, meses), '#ff4b4b');
             const res25 = meses.map(m => getS(d25.receitas, [m])[0] - getS(d25.despesas_res, [m])[0]);
@@ -257,74 +258,24 @@
                 const el = document.getElementById(`delta-${id}`);
                 el.innerText = (dif >= 0 ? "+" : "") + dif.toFixed(1) + "%";
                 el.style.color = (id === 'des' ? dif < 0 : dif > 0) ? "#22c55e" : "#ff4b4b";
-            } else {
-                document.getElementById(`val-${id}-sub`).innerText = "";
-                document.getElementById(`delta-${id}`).innerText = "";
-            }
-        }
-
-        function fillTable(id, data) {
-            const body = document.getElementById(id);
-            const sorted = Object.entries(data).sort((a,b) => b[1] - a[1]);
-            body.innerHTML = sorted.map(([k, v]) => `<tr><td>${k}</td><td class="val-col">R$ ${fmtBR(v)}</td></tr>`).join('');
+            } else { document.getElementById(`val-${id}-sub`).innerText = ""; document.getElementById(`delta-${id}`).innerText = ""; }
         }
 
         function renderPie(div, data) {
             const sortedData = Object.entries(data).sort((a, b) => b[1] - a[1]);
-            const labels = sortedData.map(d => d[0]);
-            const values = sortedData.map(d => d[1]);
-
-            Plotly.newPlot(div, [{
-                values: values, labels: labels, type: 'pie', hole: 0.55,
-                marker: { colors: PALETA_ST }, textinfo: 'percent',
-                hoverlabel: { bgcolor: '#262730' }, insidetextorientation: 'radial',
-                domain: { x: [0, 0.7], y: [0.1, 0.9] }
-            }], {
-                showlegend: true, paper_bgcolor: 'transparent', font: { color: '#fff', size: 12 },
-                margin: { l: 50, r: 150, t: 50, b: 50 },
-                legend: { x: 0.85, y: 0.5, xanchor: 'left', yanchor: 'middle', orientation: 'v', font: { size: 11 } }
-            }, { displayModeBar: false });
+            Plotly.newPlot(div, [{ values: sortedData.map(d=>d[1]), labels: sortedData.map(d=>d[0]), type: 'pie', hole: 0.55, marker: { colors: PALETA_ST }, textinfo: 'percent', hoverlabel: { bgcolor: '#262730' }, insidetextorientation: 'radial', domain: { x: [0, 0.7], y: [0.1, 0.9] } }], { showlegend: true, paper_bgcolor: 'transparent', font: { color: '#fff', size: 12 }, margin: { l: 50, r: 150, t: 50, b: 50 }, legend: { x: 0.85, y: 0.5, xanchor: 'left', yanchor: 'middle', orientation: 'v', font: { size: 11 } } }, { displayModeBar: false });
         }
 
         function renderTendencia(r, dr, meses) {
             const f = meses.map(m => r.filter(x => x.Mes === m).reduce((a, b) => a + b.Valor, 0));
             const d = meses.map(m => dr.filter(x => x.Mes === m).reduce((a, b) => a + b.Valor, 0));
             const res = f.map((v, i) => v - d[i]);
-
-            const traces = [
-                { x: meses, y: f, name: 'Faturamento', mode: 'lines+markers', line: { color: '#22c55e', width: 3 }, marker: { size: 8 } },
-                { x: meses, y: d, name: 'Despesas', mode: 'lines+markers', line: { color: '#ff4b4b', width: 3 }, marker: { size: 8 } },
-                { x: meses, y: res, name: 'Resultado', mode: 'lines+markers', line: { color: '#3b82f6', width: 3 }, marker: { size: 8 } }
-            ];
-
-            const layout = {
-                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-                font: { color: '#fff', family: 'Source Sans Pro' },
-                margin: { t: 40, b: 40, l: 80, r: 150 }, hovermode: 'x unified',
-                hoverlabel: { bgcolor: '#262730', bordercolor: '#444', font: { color: '#fff' } },
-                xaxis: { showgrid: true, gridcolor: 'rgba(255,255,255,0.1)' },
-                yaxis: { title: 'Valor', showgrid: true, gridcolor: 'rgba(255,255,255,0.1)', tickformat: '.2s' },
-                legend: { x: 1.05, y: 1, xanchor: 'left', yanchor: 'top', font: { size: 12 } },
-                showlegend: true
-            };
-            Plotly.newPlot('chart-tendencia', traces, layout, { displayModeBar: false });
+            Plotly.newPlot('chart-tendencia', [{ x: meses, y: f, name: 'Faturamento', mode: 'lines+markers', line: { color: '#22c55e', width: 3 }, marker: { size: 8 } }, { x: meses, y: d, name: 'Despesas', mode: 'lines+markers', line: { color: '#ff4b4b', width: 3 }, marker: { size: 8 } }, { x: meses, y: res, name: 'Resultado', mode: 'lines+markers', line: { color: '#3b82f6', width: 3 }, marker: { size: 8 } }], { paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: { color: '#fff', family: 'Source Sans Pro' }, margin: { t: 40, b: 40, l: 80, r: 150 }, hovermode: 'x unified', hoverlabel: { bgcolor: '#262730', bordercolor: '#444', font: { color: '#fff' } }, xaxis: { showgrid: true, gridcolor: 'rgba(255,255,255,0.1)' }, yaxis: { title: 'Valor', showgrid: true, gridcolor: 'rgba(255,255,255,0.1)', tickformat: '.2s' }, legend: { x: 1.05, y: 1, xanchor: 'left', yanchor: 'top', font: { size: 12 } }, showlegend: true }, { displayModeBar: false });
         }
 
         function renderTopBarras(dd) {
             const top = Object.entries(aggregate(dd, 'Categoria')).sort((a, b) => b[1] - a[1]).slice(0, 12).reverse();
-            const values = top.map(x => x[1]);
-            const trace = {
-                x: values, y: top.map(x => x[0]), type: 'bar', orientation: 'h', marker: { color: '#3b82f6' },
-                text: top.map(x => "R$ " + fmtBR(x[1])), textposition: 'outside',
-                hovertemplate: '%{text}<extra></extra>', cliponaxis: false
-            };
-            const layout = {
-                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-                font: { color: '#fff' }, margin: { l: 250, r: 150, t: 20, b: 20 },
-                xaxis: { visible: false, range: [0, Math.max(...values) * 1.2] },
-                yaxis: { automargin: true }, hoverlabel: { bgcolor: '#262730', font: { color: '#fff' } }
-            };
-            Plotly.newPlot('chart-top', [trace], layout, { displayModeBar: false });
+            Plotly.newPlot('chart-top', [{ x: top.map(x=>x[1]), y: top.map(x=>x[0]), type: 'bar', orientation: 'h', marker: { color: '#3b82f6' }, text: top.map(x=>"R$ "+fmtBR(x[1])), textposition: 'outside', hovertemplate: '%{text}<extra></extra>', cliponaxis: false }], { paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: { color: '#fff' }, margin: { l: 250, r: 150, t: 20, b: 20 }, xaxis: { visible: false, range: [0, Math.max(...top.map(x=>x[1])) * 1.2] }, yaxis: { automargin: true }, hoverlabel: { bgcolor: '#262730', font: { color: '#fff' } } }, { displayModeBar: false });
         }
 
         function aggregate(arr, key) { return arr.reduce((acc, obj) => { acc[obj[key]] = (acc[obj[key]] || 0) + obj.Valor; return acc; }, {}); }
