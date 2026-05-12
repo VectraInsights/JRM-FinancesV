@@ -91,14 +91,42 @@
         <div id="secao-tabelas" class="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4 mt-4">
             <div class="st-block">
                 <div class="block-title">📄 Detalhe Receitas</div>
+                <div class="text-sm opacity-60 mb-2">Resumo consolidado por tipo de receita</div>
+                <hr class="border-white/10 mb-4">
                 <div class="max-h-[400px] overflow-y-auto">
-                    <table><thead><tr><th>Receita</th><th class="val-col">Valor</th></tr></thead><tbody id="tab-receitas-body"></tbody></table>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Receita</th>
+                                <th class="val-col">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab-receitas-body"></tbody>
+                    </table>
                 </div>
             </div>
             <div class="st-block">
-                <div class="block-title">📄 Detalhe Despesas</div>
+                <div class="flex justify-between items-center mb-2">
+                    <div>
+                        <div class="block-title">📄 Detalhe Despesas</div>
+                        <div class="text-sm opacity-60">Resumo e detalhamento por setor e categoria</div>
+                    </div>
+                    <select id="filtro-tabela-despesas" onchange="renderUI()" class="st-select">
+                        <option value="setor">Resumo por setor</option>
+                        <option value="categoria">Categorias de um setor</option>
+                    </select>
+                </div>
+                <hr class="border-white/10 mb-4">
                 <div class="max-h-[400px] overflow-y-auto">
-                    <table><thead><tr><th>Setor</th><th class="val-col">Valor</th></tr></thead><tbody id="tab-despesas-body"></tbody></table>
+                    <table>
+                        <thead>
+                            <tr id="tab-despesas-header">
+                                <th>Setor</th>
+                                <th class="val-col">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab-despesas-body"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -171,22 +199,30 @@
                 <div class="st-block"><div class="block-title">Despesas</div><div id="chart-2" class="h-[400px]"></div></div>
             `;
 
-            const rAgg = aggregate(r, 'Receita');
-            const drAgg = aggregate(dr, 'Setor');
-
-            renderPie('chart-1', rAgg);
-            renderPie('chart-2', drAgg);
+            renderPie('chart-1', aggregate(r, 'Receita'));
+            renderPie('chart-2', aggregate(dr, 'Setor'));
             renderTendencia(r, dr, meses);
             renderTopBarras(dd);
             
-            fillTable('tab-receitas-body', rAgg);
-            fillTable('tab-despesas-body', drAgg);
+            // Lógica de Preenchimento das Tabelas
+            fillTable('tab-receitas-body', aggregate(r, 'Receita'));
+            
+            const modoTabela = document.getElementById('filtro-tabela-despesas').value;
+            const headerDespesa = document.getElementById('tab-despesas-header');
+            if (modoTabela === 'setor') {
+                headerDespesa.innerHTML = '<th>Setor</th><th class="val-col">Valor</th>';
+                fillTable('tab-despesas-body', aggregate(dr, 'Setor'));
+            } else {
+                headerDespesa.innerHTML = '<th>Categoria</th><th class="val-col">Valor</th>';
+                fillTable('tab-despesas-body', aggregate(dd, 'Categoria'));
+            }
         }
 
         function renderModoComparativo(meses) {
             const d26 = rawData.ano_2026;
             const d25 = rawData.ano_2025;
             const somar = (lista) => lista.filter(d => meses.includes(d.Mes)).reduce((a,b) => a+b.Valor, 0);
+
             const tot26 = { r: somar(d26.receitas), d: somar(d26.despesas_res) };
             const tot25 = { r: somar(d25.receitas), d: somar(d25.despesas_res) };
 
@@ -239,31 +275,14 @@
             const values = sortedData.map(d => d[1]);
 
             Plotly.newPlot(div, [{
-                values: values,
-                labels: labels,
-                type: 'pie',
-                hole: 0.55,
-                marker: { colors: PALETA_ST },
-                textinfo: 'percent',
-                hoverlabel: { bgcolor: '#262730' },
-                insidetextorientation: 'radial',
-                domain: { 
-                    x: [0, 0.7], 
-                    y: [0.1, 0.9] 
-                }
+                values: values, labels: labels, type: 'pie', hole: 0.55,
+                marker: { colors: PALETA_ST }, textinfo: 'percent',
+                hoverlabel: { bgcolor: '#262730' }, insidetextorientation: 'radial',
+                domain: { x: [0, 0.7], y: [0.1, 0.9] }
             }], {
-                showlegend: true,
-                paper_bgcolor: 'transparent',
-                font: { color: '#fff', size: 12 },
+                showlegend: true, paper_bgcolor: 'transparent', font: { color: '#fff', size: 12 },
                 margin: { l: 50, r: 150, t: 50, b: 50 },
-                legend: {
-                    x: 0.85,
-                    y: 0.5,
-                    xanchor: 'left',
-                    yanchor: 'middle',
-                    orientation: 'v',
-                    font: { size: 11 }
-                }
+                legend: { x: 0.85, y: 0.5, xanchor: 'left', yanchor: 'middle', orientation: 'v', font: { size: 11 } }
             }, { displayModeBar: false });
         }
 
@@ -281,8 +300,7 @@
             const layout = {
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                 font: { color: '#fff', family: 'Source Sans Pro' },
-                margin: { t: 40, b: 40, l: 80, r: 150 },
-                hovermode: 'x unified',
+                margin: { t: 40, b: 40, l: 80, r: 150 }, hovermode: 'x unified',
                 hoverlabel: { bgcolor: '#262730', bordercolor: '#444', font: { color: '#fff' } },
                 xaxis: { showgrid: true, gridcolor: 'rgba(255,255,255,0.1)' },
                 yaxis: { title: 'Valor', showgrid: true, gridcolor: 'rgba(255,255,255,0.1)', tickformat: '.2s' },
@@ -295,20 +313,16 @@
         function renderTopBarras(dd) {
             const top = Object.entries(aggregate(dd, 'Categoria')).sort((a, b) => b[1] - a[1]).slice(0, 12).reverse();
             const values = top.map(x => x[1]);
-            const labels = top.map(x => x[0]);
-
             const trace = {
-                x: values, y: labels, type: 'bar', orientation: 'h', marker: { color: '#3b82f6' },
+                x: values, y: top.map(x => x[0]), type: 'bar', orientation: 'h', marker: { color: '#3b82f6' },
                 text: top.map(x => "R$ " + fmtBR(x[1])), textposition: 'outside',
                 hovertemplate: '%{text}<extra></extra>', cliponaxis: false
             };
-
             const layout = {
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                 font: { color: '#fff' }, margin: { l: 250, r: 150, t: 20, b: 20 },
                 xaxis: { visible: false, range: [0, Math.max(...values) * 1.2] },
-                yaxis: { automargin: true },
-                hoverlabel: { bgcolor: '#262730', font: { color: '#fff' } }
+                yaxis: { automargin: true }, hoverlabel: { bgcolor: '#262730', font: { color: '#fff' } }
             };
             Plotly.newPlot('chart-top', [trace], layout, { displayModeBar: false });
         }
