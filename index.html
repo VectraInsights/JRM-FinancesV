@@ -7,124 +7,222 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
-        body { background-color: #0f172a; color: #f8fafc; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        :root {
+            --bg-color: #0e1117;
+            --card-bg: #1a1c24;
+            --text-color: #ffffff;
+            --accent-green: #22C55E;
+            --accent-red: #EF4444;
+            --accent-blue: #3B82F6;
+        }
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Inter', sans-serif; }
+        .st-card { background: var(--card-bg); border: 1px solid #30333d; border-radius: 0.5rem; padding: 1.5rem; }
+        .sidebar { background: #1a1c24; border-right: 1px solid #30333d; }
+        
+        /* Estilo da tabela igual ao Streamlit */
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+        th { text-align: left; border-bottom: 2px solid #30333d; padding: 8px; color: #94a3b8; }
+        td { padding: 8px; border-bottom: 1px solid #30333d; }
+        tr:hover { background: #262936; }
+        
+        input, select { background: #0e1117; border: 1px solid #30333d; color: white; border-radius: 4px; padding: 5px 10px; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="flex flex-col md:flex-row min-h-screen">
 
-    <div class="max-w-7xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-            <div>
-                <h1 class="text-3xl font-bold text-white">📊 JRM Financial</h1>
-                <p class="text-slate-400 text-sm">Dashboard de Gestão BPO</p>
-            </div>
-            
-            <div class="flex gap-3">
-                <select id="ano-select" class="bg-slate-800 border border-slate-700 rounded px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="2026">2026</option>
-                    <option value="2025">2025</option>
-                </select>
-                <button onclick="carregarDados()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition">
-                    Atualizar
-                </button>
-            </div>
-        </header>
+    <aside class="sidebar w-full md:w-64 p-6 flex-shrink-0">
+        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">⚙️ Filtros</h2>
+        
+        <div class="mb-6">
+            <label class="block text-sm mb-2 text-slate-400">Selecione o Ano</label>
+            <select id="ano-select" onchange="carregarDados()" class="w-full">
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+            </select>
+        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="glass p-6 rounded-xl shadow-lg">
-                <p class="text-slate-400 text-sm uppercase font-semibold">Faturamento</p>
-                <h2 id="kpi-faturamento" class="text-3xl font-bold text-emerald-400">R$ 0,00</h2>
+        <div class="mb-6">
+            <label class="block text-sm mb-2 text-slate-400">Filtrar Meses</label>
+            <div id="meses-container" class="space-y-1 max-h-60 overflow-y-auto pr-2">
+                </div>
+        </div>
+        
+        <button onclick="carregarDados()" class="w-full bg-blue-600 py-2 rounded font-bold hover:bg-blue-700 transition mt-4">
+            🔄 Atualizar
+        </button>
+    </aside>
+
+    <main class="flex-1 p-6 md:p-10 overflow-y-auto">
+        <h1 class="text-3xl font-bold mb-8">📊 JRM Financial Dashboard</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="st-card">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Faturamento Total</p>
+                <h2 id="kpi-faturamento" class="text-3xl font-bold mt-1" style="color: var(--accent-green)">R$ 0,00</h2>
             </div>
-            <div class="glass p-6 rounded-xl shadow-lg">
-                <p class="text-slate-400 text-sm uppercase font-semibold">Despesas</p>
-                <h2 id="kpi-despesas" class="text-3xl font-bold text-rose-400">R$ 0,00</h2>
+            <div class="st-card">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Despesas Totais</p>
+                <h2 id="kpi-despesas" class="text-3xl font-bold mt-1" style="color: var(--accent-red)">R$ 0,00</h2>
             </div>
-            <div class="glass p-6 rounded-xl shadow-lg">
-                <p class="text-slate-400 text-sm uppercase font-semibold">Resultado Líquido</p>
-                <h2 id="kpi-resultado" class="text-3xl font-bold text-blue-400">R$ 0,00</h2>
+            <div class="st-card">
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Resultado Líquido</p>
+                <h2 id="kpi-resultado" class="text-3xl font-bold mt-1" style="color: var(--accent-blue)">R$ 0,00</h2>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="glass p-4 rounded-xl">
-                <h3 class="text-lg font-semibold mb-4 ml-2">Distribuição por Setor</h3>
-                <div id="chart-setores" class="w-full h-[400px]"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+            <div class="st-card">
+                <h3 class="text-lg font-semibold mb-4">Setores</h3>
+                <div id="chart-setores" class="h-80"></div>
             </div>
-            <div class="glass p-4 rounded-xl">
-                <h3 class="text-lg font-semibold mb-4 ml-2">Top 10 Categorias de Despesa</h3>
-                <div id="chart-categorias" class="w-full h-[400px]"></div>
+            <div class="st-card">
+                <h3 class="text-lg font-semibold mb-4">Top 10 Categorias</h3>
+                <div id="chart-categorias" class="h-80"></div>
             </div>
         </div>
 
-        <footer class="mt-12 text-center text-slate-500 text-xs">
-            <p id="ultima-atualizacao">Aguardando carregamento...</p>
-        </footer>
-    </div>
+        <div class="st-card">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <h3 class="text-lg font-semibold">🔍 Detalhamento de Despesas</h3>
+                <div class="flex gap-2">
+                    <select id="filtro-setor-tabela" onchange="aplicarFiltrosLocais()" class="text-sm">
+                        <option value="TODOS">Todos os Setores</option>
+                    </select>
+                    <input type="text" id="busca-tabela" onkeyup="aplicarFiltrosLocais()" placeholder="Buscar categoria..." class="text-sm">
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table id="tabela-despesas">
+                    <thead>
+                        <tr>
+                            <th>Mês</th>
+                            <th>Setor</th>
+                            <th>Categoria</th>
+                            <th>Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <p id="ultima-atualizacao" class="text-center text-slate-600 text-xs mt-10"></p>
+    </main>
 
     <script>
-        const formatarMoeda = (valor) => {
-            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
-        };
+        let dadosOriginais = {};
 
         async function carregarDados() {
             const ano = document.getElementById('ano-select').value;
-            const statusUpdate = document.getElementById('ultima-atualizacao');
-            statusUpdate.innerText = "Carregando dados da planilha...";
-
-            try {
-                // Chamada para a API que criamos no Python
-                const response = await fetch(`/api/data?ano=${ano}`);
-                const data = await response.json();
-
-                if (data.status === 'success') {
-                    // Atualizar KPIs
-                    document.getElementById('kpi-faturamento').innerText = formatarMoeda(data.kpis.faturamento);
-                    document.getElementById('kpi-despesas').innerText = formatarMoeda(data.kpis.despesas);
-                    document.getElementById('kpi-resultado').innerText = formatarMoeda(data.kpis.resultado);
-                    document.getElementById('ultima-atualizacao').innerText = `Última atualização: ${data.ultima_atualizacao}`;
-
-                    renderizarGraficos(data.graficos);
-                } else {
-                    alert("Erro ao processar: " + data.message);
-                }
-            } catch (error) {
-                console.error("Erro na requisição:", error);
-                statusUpdate.innerText = "Erro ao conectar com o servidor.";
+            const res = await fetch(`/api/data?ano=${ano}`);
+            const data = await res.json();
+            
+            if(data.status === 'success') {
+                dadosOriginais = data;
+                document.getElementById('ultima-atualizacao').innerText = `Última atualização: ${data.ultima_atualizacao}`;
+                
+                // Popula meses se for a primeira carga
+                popularFiltroMeses(data.meses_disponiveis);
+                popularFiltroSetores(data.raw_despesas_det);
+                aplicarFiltrosLocais();
             }
         }
 
-        function renderizarGraficos(graficos) {
-            const layoutBase = {
-                paper_bgcolor: 'rgba(0,0,0,0)',
-                plot_bgcolor: 'rgba(0,0,0,0)',
-                font: { color: '#f8fafc' },
-                margin: { t: 20, b: 40, l: 40, r: 20 }
-            };
-
-            // Gráfico de Pizza (Setores)
-            const dataPizza = [{
-                values: Object.values(graficos.setores),
-                labels: Object.keys(graficos.setores),
-                type: 'pie',
-                hole: 0.4,
-                marker: { colors: ['#10b981', '#3b82f6', '#f43f5e', '#f59e0b', '#8b5cf6'] }
-            }];
-            Plotly.newPlot('chart-setores', dataPizza, layoutBase);
-
-            // Gráfico de Barras (Categorias)
-            const dataBarras = [{
-                x: Object.values(graficos.top_categorias),
-                y: Object.keys(graficos.top_categorias),
-                type: 'bar',
-                orientation: 'h',
-                marker: { color: '#3b82f6' }
-            }];
-            const layoutBarras = { ...layoutBase, yaxis: { automargin: true } };
-            Plotly.newPlot('chart-categorias', dataBarras, layoutBarras);
+        function popularFiltroMeses(meses) {
+            const container = document.getElementById('meses-container');
+            const selecionadosAnteriormente = Array.from(container.querySelectorAll('input:checked')).map(i => i.value);
+            
+            container.innerHTML = meses.map(m => `
+                <label class="flex items-center gap-2 text-sm cursor-pointer hover:text-white">
+                    <input type="checkbox" value="${m}" onchange="aplicarFiltrosLocais()" 
+                        ${selecionadosAnteriormente.length === 0 || selecionadosAnteriormente.includes(m) ? 'checked' : ''}> 
+                    ${m}
+                </label>
+            `).join('');
         }
 
-        // Carregar automaticamente ao abrir
+        function popularFiltroSetores(detalhes) {
+            const select = document.getElementById('filtro-setor-tabela');
+            const setores = [...new Set(detalhes.map(d => d.Setor))].sort();
+            select.innerHTML = '<option value="TODOS">Todos os Setores</option>' + 
+                setores.map(s => `<option value="${s}">${s}</option>`).join('');
+        }
+
+        function aplicarFiltrosLocais() {
+            const mesesSelecionados = Array.from(document.querySelectorAll('#meses-container input:checked')).map(i => i.value);
+            const setorFiltro = document.getElementById('filtro-setor-tabela').value;
+            const busca = document.getElementById('busca-tabela').value.toLowerCase();
+
+            // Filtrar Receitas
+            const r = dadosOriginais.raw_receitas.filter(d => mesesSelecionados.includes(d.Mes));
+            const dr = dadosOriginais.raw_despesas_res.filter(d => mesesSelecionados.includes(d.Mes));
+            const dd = dadosOriginais.raw_despesas_det.filter(d => {
+                const bateMes = mesesSelecionados.includes(d.Mes);
+                const bateSetor = setorFiltro === "TODOS" || d.Setor === setorFiltro;
+                const bateBusca = d.Categoria.toLowerCase().includes(busca);
+                return bateMes && bateSetor && bateBusca;
+            });
+
+            // Atualizar KPIs
+            const fat = r.reduce((a, b) => a + b.Valor, 0);
+            const des = dr.reduce((a, b) => a + b.Valor, 0);
+            
+            const fmt = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+            document.getElementById('kpi-faturamento').innerText = fmt(fat);
+            document.getElementById('kpi-despesas').innerText = fmt(des);
+            document.getElementById('kpi-resultado').innerText = fmt(fat - des);
+
+            renderizarGraficos(dr, dd);
+            renderizarTabela(dd);
+        }
+
+        function renderizarGraficos(resumoSetor, detalhes) {
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#ffffff' },
+                margin: { t: 10, b: 10, l: 10, r: 10 },
+                showlegend: false
+            };
+
+            // Pizza Setores
+            const setoresSoma = {};
+            resumoSetor.forEach(d => setoresSoma[d.Setor] = (setoresSoma[d.Setor] || 0) + d.Valor);
+            
+            Plotly.newPlot('chart-setores', [{
+                values: Object.values(setoresSoma),
+                labels: Object.keys(setoresSoma),
+                type: 'pie',
+                hole: 0.4,
+                marker: { colors: ['#22C55E', '#3B82F6', '#EF4444', '#F59E0B', '#8B5CF6'] }
+            }], layout);
+
+            // Barras Categorias
+            const catsSoma = {};
+            detalhes.forEach(d => catsSoma[d.Categoria] = (catsSoma[d.Categoria] || 0) + d.Valor);
+            const top10 = Object.entries(catsSoma).sort((a,b) => b[1] - a[1]).slice(0, 10);
+
+            Plotly.newPlot('chart-categorias', [{
+                x: top10.map(i => i[1]),
+                y: top10.map(i => i[0]),
+                type: 'bar',
+                orientation: 'h',
+                marker: { color: '#3B82F6' }
+            }], { ...layout, yaxis: { automargin: true } });
+        }
+
+        function renderizarTabela(dados) {
+            const tbody = document.querySelector('#tabela-despesas tbody');
+            tbody.innerHTML = dados.map(d => `
+                <tr>
+                    <td>${d.Mes}</td>
+                    <td>${d.Setor}</td>
+                    <td class="font-medium">${d.Categoria}</td>
+                    <td class="text-rose-400 font-mono text-right">R$ ${d.Valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                </tr>
+            `).join('');
+        }
+
         window.onload = carregarDados;
     </script>
 </body>
