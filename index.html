@@ -9,25 +9,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --st-bg: #0e1117; --st-text: #fafafa; --st-border: rgba(250, 250, 250, 0.1); }
-        body { background-color: var(--st-bg); color: var(--st-text); font-family: 'Source Sans Pro', sans-serif; margin: 0; }
-        
-        /* Dashboard Full-Width para aproveitar toda a tela */
+        body { background-color: var(--st-bg); color: var(--st-text); font-family: 'Source Sans Pro', sans-serif; margin: 0; padding: 0; }
         .full-container { width: 98%; margin: 0 auto; padding: 1rem 0; }
-        
-        /* Estilo Botões de Ação */
         .st-btn-icon { background: #262730; border: 1px solid var(--st-border); border-radius: 4px; padding: 6px; cursor: pointer; }
         #filter-menu { display: none; position: absolute; right: 1%; top: 4rem; background: #262730; border: 1px solid var(--st-border); border-radius: 8px; padding: 1.5rem; z-index: 100; width: 280px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-
-        /* KPIs Proporcionais */
         .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0 2rem 0; text-align: center; }
         .kpi-label { font-size: 1rem; opacity: 0.8; margin-bottom: 0.2rem; }
         .kpi-value { font-size: 2.2rem; font-weight: 700; line-height: 1.1; }
-
-        /* Blocos de Gráfico (Cards maiores) */
         .st-block { border: 1px solid var(--st-border); border-radius: 0.5rem; padding: 1.2rem; margin-bottom: 1rem; }
         .block-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; }
-
-        /* Tabelas */
         .st-select, .st-input { background: #0e1117; border: 1px solid var(--st-border); color: white; padding: 0.4rem; border-radius: 4px; font-size: 0.85rem; }
         table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
         th { text-align: left; padding: 10px; border-bottom: 2px solid var(--st-border); color: rgba(255,255,255,0.6); }
@@ -71,8 +61,6 @@
             <div class="st-block"><div class="block-title">Despesas</div><div id="chart-despesas" class="h-[450px]"></div></div>
         </div>
 
-        <div class="px-4"><hr class="border-white/10 my-6"></div>
-
         <div class="st-block mx-4">
             <div class="block-title">Tendência Mensal — <span id="ano-titulo"></span></div>
             <div id="chart-tendencia" class="h-96"></div>
@@ -115,7 +103,26 @@
     <script>
         let rawData = null;
         const MESES_ORDEM = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-        const CORES_ST = ['#636EFA', '#AB63FA', '#EF553B', '#00CC96', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880'];
+
+        // MAPA DE CORES POR SEGMENTO (Fidelidade total ao seu print)
+        const MAPA_CORES = {
+            // Receitas
+            "Correios": "#636EFA",
+            "Fretes internos": "#EF553B",
+            "Fretes diversos": "#00CC96",
+            "Rendimento sobre aplicações": "#AB63FA",
+            
+            // Setores / Despesas
+            "Administrativas": "#636EFA",
+            "Abastecimento/Descargas": "#EF553B",
+            "Financiamentos/Imobilizados": "#00CC96",
+            "Diversos": "#AB63FA",
+            "Mecânica": "#FFA15A",
+            "Despesas da Borracharia": "#19D3F3",
+            "Elétrica": "#FF6692",
+            "Despesas Baú, Lanternagem, Funilaria e Pintura": "#B6E880",
+            "Acessórios": "#FF97FF"
+        };
 
         const fmtBR = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         function toggleFilters() { const m = document.getElementById('filter-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block'; }
@@ -153,63 +160,54 @@
             renderTables(r, dr, dd);
         }
 
+        function getCoresParaLabels(labels) {
+            return labels.map(label => MAPA_CORES[label] || "#888888");
+        }
+
         function renderCharts(r, dr, dd, meses) {
-            // Layout otimizado para gráficos maiores (Igual ao Streamlit)
             const layoutPizza = {
-                paper_bgcolor: 'rgba(0,0,0,0)',
-                plot_bgcolor: 'rgba(0,0,0,0)',
-                font: { color: '#fafafa', family: 'Source Sans Pro', size: 14 },
-                margin: { t: 30, b: 30, l: 30, r: 150 }, // Margem direita maior para acomodar a legenda sem apertar o gráfico
-                showlegend: true,
-                legend: { x: 1, y: 0.5, font: { size: 12 } },
-                separators: ',.'
-            };
-
-            // Gráfico de Receitas
-            const rAgg = aggregate(r, 'Receita');
-            Plotly.newPlot('chart-receitas', [{ 
-                values: Object.values(rAgg), 
-                labels: Object.keys(rAgg), 
-                type: 'pie', 
-                hole: 0.55, 
-                marker: {colors: CORES_ST},
-                textinfo: 'percent',
-                insidetextorientation: 'radial'
-            }], layoutPizza);
-
-            // Gráfico de Despesas
-            const drAgg = aggregate(dr, 'Setor');
-            Plotly.newPlot('chart-despesas', [{ 
-                values: Object.values(drAgg), 
-                labels: Object.keys(drAgg), 
-                type: 'pie', 
-                hole: 0.55, 
-                marker: {colors: CORES_ST},
-                textinfo: 'percent',
-                insidetextorientation: 'radial'
-            }], layoutPizza);
-
-            // Tendência e Top Despesas mantendo a escala brasileira
-            const commonLayout = {
                 paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-                font: { color: '#fafafa', family: 'Source Sans Pro', size: 13 },
-                margin: { t:20, b:40, l:60, r:20 },
+                font: { color: '#fafafa', family: 'Source Sans Pro', size: 14 },
+                margin: { t: 30, b: 30, l: 30, r: 150 },
+                showlegend: true, legend: { x: 1, y: 0.5 },
                 separators: ',.'
             };
 
+            // Receitas
+            const rAgg = aggregate(r, 'Receita');
+            const rLabels = Object.keys(rAgg);
+            Plotly.newPlot('chart-receitas', [{ 
+                values: Object.values(rAgg), labels: rLabels, 
+                type: 'pie', hole: 0.55, 
+                marker: { colors: getCoresParaLabels(rLabels) },
+                textinfo: 'percent'
+            }], layoutPizza);
+
+            // Despesas
+            const drAgg = aggregate(dr, 'Setor');
+            const drLabels = Object.keys(drAgg);
+            Plotly.newPlot('chart-despesas', [{ 
+                values: Object.values(drAgg), labels: drLabels, 
+                type: 'pie', hole: 0.55, 
+                marker: { colors: getCoresParaLabels(drLabels) },
+                textinfo: 'percent'
+            }], layoutPizza);
+
+            // Tendência
             const tFat = meses.map(m => r.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
             const tDes = meses.map(m => dr.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
             Plotly.newPlot('chart-tendencia', [
                 { x: meses, y: tFat, name: 'Faturamento', line: {color: '#22c55e', width: 4}, mode: 'lines+markers' },
                 { x: meses, y: tDes, name: 'Despesas', line: {color: '#ff4b4b', width: 4}, mode: 'lines+markers' },
                 { x: meses, y: tFat.map((v,i) => v - tDes[i]), name: 'Resultado', line: {color: '#3b82f6', width: 4}, mode: 'lines+markers' }
-            ], { ...commonLayout, yaxis: { tickformat: ',.2f' }, hovermode: 'x unified' });
+            ], { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: '#fafafa' }, margin: { t:20, b:40, l:60, r:20 }, separators: ',.', yaxis: { tickformat: ',.2f' }, hovermode: 'x unified' });
 
+            // Top Despesas
             const top = Object.entries(aggregate(dd, 'Categoria')).sort((a,b) => b[1]-a[1]).slice(0, 10).reverse();
             Plotly.newPlot('chart-top', [{ 
                 x: top.map(x => x[1]), y: top.map(x => x[0]), type: 'bar', orientation: 'h', marker: {color: '#79B3E1'},
                 text: top.map(x => "R$ " + fmtBR(x[1])), textposition: 'outside', cliponaxis: false
-            }], { ...commonLayout, margin: { l: 220, r: 120 }, xaxis: { visible: false } });
+            }], { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: '#fafafa' }, margin: { l: 220, r: 120 }, xaxis: { visible: false } });
         }
 
         function renderTables(r, dr, dd) {
