@@ -147,7 +147,3 @@ async def get_financial_data():
         }
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
-
-@app.get("/")
-async def health_check():
-    return {"status": "online", "service": "JRM Financial API"}
