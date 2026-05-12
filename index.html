@@ -8,23 +8,9 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { 
-            --st-bg: #0e1117; 
-            --st-text: #fafafa; 
-            --st-border: rgba(250, 250, 250, 0.1); 
-        }
-        body { 
-            background-color: var(--st-bg); 
-            color: var(--st-text); 
-            font-family: 'Source Sans Pro', sans-serif; 
-            margin: 0; 
-            padding: 0; 
-        }
-        .full-container { 
-            width: 98%; 
-            margin: 0 auto; 
-            padding: 1rem 0; 
-        }
+        :root { --st-bg: #0e1117; --st-text: #fafafa; --st-border: rgba(250, 250, 250, 0.1); }
+        body { background-color: var(--st-bg); color: var(--st-text); font-family: 'Source Sans Pro', sans-serif; margin: 0; padding: 0; }
+        .full-container { width: 98%; margin: 0 auto; padding: 1rem 0; }
         
         /* Menu Flutuante Estilo Streamlit */
         #filter-menu { 
@@ -151,7 +137,7 @@
                         <div class="block-title">📄 Detalhe Despesas</div>
                         <div class="text-sm opacity-60">Detalhamento por categoria</div>
                     </div>
-                    <select id="filtro-setor-especifico" onchange="renderUI()" class="st-select w-40"></select>
+                    <select id="filtro-setor-especifico" onchange="renderUI()" class="st-select w-48"></select>
                 </div>
                 <hr class="border-white/10 mb-4">
                 <div class="max-h-[400px] overflow-y-auto">
@@ -167,7 +153,9 @@
         const PALETA_ST = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#FECB52', '#FF97FF'];
         const fmtBR = v => (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+        // Fechar menu ao clicar fora
         window.addEventListener('click', () => { document.getElementById('filter-menu').style.display = 'none'; });
+        
         function toggleFilters() {
             const m = document.getElementById('filter-menu');
             m.style.display = m.style.display === 'block' ? 'none' : 'block';
@@ -197,6 +185,7 @@
             const anoKey = (visao === "comparativo" || visao === "2026") ? "ano_2026" : "ano_2025";
             const setores = [...new Set(rawData[anoKey].despesas_res.map(d => d.Setor))].sort();
             document.getElementById('filtro-setor-especifico').innerHTML = setores.map(s => `<option value="${s}">${s}</option>`).join('');
+            
             renderUI();
         }
 
@@ -212,11 +201,15 @@
             const detContainer = document.getElementById('detalhe-despesas-container');
 
             if (visao === 'comparativo') {
-                tendenciaSecao.style.display = 'none'; tabelasSecao.style.display = 'none'; detContainer.style.display = 'none';
+                tendenciaSecao.style.display = 'none';
+                tabelasSecao.style.display = 'none';
+                detContainer.style.display = 'none';
                 mainContainer.className = "grid grid-cols-1 lg:grid-cols-3 gap-4 px-4";
                 renderModoComparativo(mesesSel);
             } else {
-                tendenciaSecao.style.display = 'block'; tabelasSecao.style.display = 'grid'; detContainer.style.display = 'block';
+                tendenciaSecao.style.display = 'block';
+                tabelasSecao.style.display = 'grid';
+                detContainer.style.display = 'block';
                 mainContainer.className = "grid grid-cols-1 lg:grid-cols-2 gap-4 px-4";
                 renderModoIndividual(visao, mesesSel);
             }
@@ -259,20 +252,25 @@
                 <div class="st-block"><h3>Despesas</h3><div id="c-des" style="height: 320px;"></div></div>
                 <div class="st-block"><h3>Resultado</h3><div id="c-res" style="height: 320px;"></div></div>`;
 
+            // Timeout para evitar bug de barras gigantes no comparativo
             setTimeout(() => {
                 const getS = (dados, m) => m.map(mes => dados.filter(x => x.Mes === mes).reduce((a, b) => a + b.Valor, 0));
                 const plotComp = (id, s25, s26, cor) => {
                     Plotly.newPlot(id, [
                         { x: meses, y: s25, name: '2025', type: 'bar', marker: { color: '#94A3B8' } },
                         { x: meses, y: s26, name: '2026', type: 'bar', marker: { color: cor } }
-                    ], { barmode: 'group', paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: { color: '#fff' }, margin: { t: 20, b: 40, l: 40, r: 10 }, showlegend: false, xaxis: { automargin: true }, yaxis: { automargin: true, tickformat: '.2s' } }, { displayModeBar: false, responsive: true });
+                    ], { 
+                        barmode: 'group', paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', 
+                        font: { color: '#fff' }, margin: { t: 20, b: 40, l: 40, r: 10 }, 
+                        showlegend: false, xaxis: { automargin: true }, yaxis: { automargin: true, tickformat: '.2s' } 
+                    }, { displayModeBar: false, responsive: true });
                 };
                 plotComp('c-fat', getS(d25.receitas, meses), getS(d26.receitas, meses), '#22c55e');
                 plotComp('c-des', getS(d25.despesas_res, meses), getS(d26.despesas_res, meses), '#ff4b4b');
                 const r25 = meses.map(m => getS(d25.receitas, [m])[0] - getS(d25.despesas_res, [m])[0]);
                 const r26 = meses.map(m => getS(d26.receitas, [m])[0] - getS(d26.despesas_res, [m])[0]);
                 plotComp('c-res', r25, r26, '#3b82f6');
-            }, 50);
+            }, 100);
         }
 
         function renderPie(div, data) {
@@ -329,6 +327,7 @@
         }
 
         function aggregate(arr, key) { return arr.reduce((acc, obj) => { acc[obj[key]] = (acc[obj[key]] || 0) + obj.Valor; return acc; }, {}); }
+        
         function atualizarKPI(id, vP, vS, label) {
             document.getElementById(`val-${id}-principal`).innerText = "R$ " + fmtBR(vP);
             if (vS !== null) {
@@ -337,7 +336,10 @@
                 const el = document.getElementById(`delta-${id}`);
                 el.innerText = (dif >= 0 ? "+" : "") + dif.toFixed(1) + "%";
                 el.style.color = (id === 'des' ? dif < 0 : dif > 0) ? "#22c55e" : "#ff4b4b";
-            } else { document.getElementById(`val-${id}-sub`).innerText = ""; document.getElementById(`delta-${id}`).innerText = ""; }
+            } else { 
+                document.getElementById(`val-${id}-sub`).innerText = ""; 
+                document.getElementById(`delta-${id}`).innerText = ""; 
+            }
         }
 
         window.onload = carregarDados;
