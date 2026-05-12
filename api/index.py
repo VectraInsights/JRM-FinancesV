@@ -11,7 +11,7 @@ from typing import List, Optional
 
 app = FastAPI()
 
-# Configuração de CORS para permitir que seu frontend acesse a API
+# Configuração de CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,7 +20,7 @@ app.add_middleware(
 )
 
 # =========================================================
-# CONSTANTES E CONFIGURAÇÕES
+# CONSTANTES E CONFIGURAÇÕES (IDs das suas planilhas)
 # =========================================================
 SHEET_ID_2026 = "1Bh2Xb1t5m7Si3HXgRVHkrQ5ALtsBRV_wTTU1G-EQo0A"
 SHEET_ID_2025 = "1JEruYIxHbwPlQS45oTFH60l3i4hqF_3idM2Vu8sFPHs"
@@ -35,7 +35,7 @@ BLOCOS_DESPESA_EXATOS = {"DIVERSOS", "DESPESAS DIVERSAS", "ACESSÓRIOS", "ACESSO
 BLOCOS_PARADA_GERAIS = {"RESULTADO", "RECEITAS", "TOTAL", "FATURAMENTO"}
 
 # =========================================================
-# FUNÇÕES DE TRATAMENTO DE DADOS
+# FUNÇÕES DE TRATAMENTO DE DADOS (Suas funções originais)
 # =========================================================
 def texto(v): 
     return str(v).strip() if pd.notna(v) else ""
@@ -65,6 +65,9 @@ def eh_bloco_despesa(valor):
     t = texto(valor).upper()
     return t.startswith("DESPESAS") or t in BLOCOS_DESPESA_EXATOS
 
+# =========================================================
+# LÓGICA DE PROCESSAMENTO (Sua inteligência de busca)
+# =========================================================
 def processar_planilha(xl):
     receitas, despesas_res, despesas_det = [], [], []
 
@@ -77,24 +80,25 @@ def processar_planilha(xl):
         df["ColC"], df["ColD"] = df["ColC"].apply(numero), df["ColD"].apply(numero)
 
         for i in df.index:
-            if not eh_bloco_despesa(df.loc[i, "ColA"]): 
-                continue
+            # Lógica para Setores de Despesa
+            if eh_bloco_despesa(df.loc[i, "ColA"]): 
+                setor = limpar_prefixo_despesas(df.loc[i, "ColA"])
+                total_setor = df.loc[i + 1, "ColD"] if (i + 1) in df.index else 0
                 
-            setor = limpar_prefixo_despesas(df.loc[i, "ColA"])
-            total_setor = df.loc[i + 1, "ColD"] if (i + 1) in df.index else 0
-            
-            if pd.notna(total_setor) and total_setor != 0:
-                despesas_res.append({"Mes": aba, "Setor": setor, "Valor": abs(float(total_setor))})
+                if pd.notna(total_setor) and total_setor != 0:
+                    despesas_res.append({"Mes": aba, "Setor": setor, "Valor": abs(float(total_setor))})
 
-            for j in range(i + 1, len(df)):
-                bloco_j = texto(df.loc[j, "ColA"])
-                if j > i + 1 and (eh_bloco_despesa(bloco_j) or bloco_j.upper() in BLOCOS_PARADA_GERAIS): 
-                    break
-                
-                cat, val = limpar_prefixo_despesas(df.loc[j, "ColB"]), df.loc[j, "ColC"]
-                if cat and pd.notna(val) and val != 0:
-                    despesas_det.append({"Mes": aba, "Setor": setor, "Categoria": cat, "Valor": abs(float(val))})
+                # Detalhamento das categorias dentro do setor
+                for j in range(i + 1, len(df)):
+                    bloco_j = texto(df.loc[j, "ColA"])
+                    if j > i + 1 and (eh_bloco_despesa(bloco_j) or bloco_j.upper() in BLOCOS_PARADA_GERAIS): 
+                        break
+                    
+                    cat, val = limpar_prefixo_despesas(df.loc[j, "ColB"]), df.loc[j, "ColC"]
+                    if cat and pd.notna(val) and val != 0:
+                        despesas_det.append({"Mes": aba, "Setor": setor, "Categoria": cat, "Valor": abs(float(val))})
 
+        # Lógica para Faturamento
         idx_fat = df[df["ColA"].str.upper() == "FATURAMENTO"].index
         if not idx_fat.empty:
             for k in range(idx_fat[0] + 1, len(df)):
@@ -116,23 +120,23 @@ def carregar_dados(sheet_id):
     return processar_planilha(xl)
 
 # =========================================================
-# ENDPOINTS DA API
+# ENDPOINT (Ajustado para o Comparativo)
 # =========================================================
 @app.get("/api/data")
 async def get_financial_data():
     try:
-        # Carregamos ambos os anos para permitir a comparação instantânea sem novas requisições
+        # Carregando 2026 e 2025
         r26, dr26, dd26 = carregar_dados(SHEET_ID_2026)
         r25, dr25, dd25 = carregar_dados(SHEET_ID_2025)
 
-        # Identificamos quais meses realmente têm lançamentos (Valores > 0)
-        meses_ativos_26 = r26[r26["Valor"] > 0]["Mes"].unique().tolist() if not r26.empty else []
-        meses_ativos_25 = r25[r25["Valor"] > 0]["Mes"].unique().tolist() if not r25.empty else []
+        # Identifica meses ativos (onde há faturamento real)
+        m26 = r26[r26["Valor"] > 0]["Mes"].unique().tolist() if not r26.empty else []
+        m25 = r25[r25["Valor"] > 0]["Mes"].unique().tolist() if not r25.empty else []
         
         return {
             "status": "success",
-            "meses_disponiveis_2026": meses_ativos_26,
-            "meses_disponiveis_2025": meses_ativos_25,
+            "meses_disponiveis_2026": m26,
+            "meses_disponiveis_2025": m25,
             "ano_2026": {
                 "receitas": r26.to_dict(orient="records"),
                 "despesas_res": dr26.to_dict(orient="records"),
