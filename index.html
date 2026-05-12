@@ -11,16 +11,44 @@
         :root { --st-bg: #0e1117; --st-text: #fafafa; --st-border: rgba(250, 250, 250, 0.1); }
         body { background-color: var(--st-bg); color: var(--st-text); font-family: 'Source Sans Pro', sans-serif; margin: 0; padding: 0; }
         .full-container { width: 98%; margin: 0 auto; padding: 1rem 0; }
-        .st-btn-icon { background: #262730; border: 1px solid var(--st-border); border-radius: 4px; padding: 6px; cursor: pointer; }
-        #filter-menu { display: none; position: absolute; right: 1%; top: 4rem; background: #262730; border: 1px solid var(--st-border); border-radius: 8px; padding: 1.5rem; z-index: 100; width: 280px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        
+        /* Estilo Streamlit Sidebar/Popout */
+        #filter-menu { 
+            display: none; 
+            position: absolute; 
+            right: 20px; 
+            top: 60px; 
+            background: #262730; 
+            border: 1px solid var(--st-border); 
+            border-radius: 12px; 
+            padding: 20px; 
+            z-index: 1000; 
+            width: 320px; 
+            box-shadow: 0 15px 50px rgba(0,0,0,0.6); 
+        }
+        
+        .st-btn-icon { background: #262730; border: 1px solid var(--st-border); border-radius: 4px; padding: 6px; cursor: pointer; color: white; }
         .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0 2rem 0; text-align: center; }
-        .kpi-label { font-size: 1rem; opacity: 0.8; margin-bottom: 0.2rem; }
-        .kpi-value { font-size: 1.8rem; font-weight: 700; line-height: 1.1; }
-        .kpi-sub { font-size: 0.85rem; opacity: 0.6; margin-top: 4px; }
-        .delta { font-size: 0.9rem; font-weight: 600; margin-top: 2px; }
+        .kpi-value { font-size: 1.8rem; font-weight: 700; }
         .st-block { border: 1px solid var(--st-border); border-radius: 0.5rem; padding: 1.2rem; margin-bottom: 1rem; }
         .block-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; }
-        .st-select { background: #0e1117; border: 1px solid var(--st-border); color: white; padding: 0.4rem; border-radius: 4px; font-size: 0.85rem; }
+        
+        /* Botões de Ação do Menu */
+        .action-btn { 
+            background: transparent; 
+            border: 1px solid var(--st-border); 
+            color: white; 
+            padding: 4px 12px; 
+            border-radius: 6px; 
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .action-btn:hover { border-color: #ff4b4b; color: #ff4b4b; }
+
+        /* Estilização dos Inputs */
+        input[type="radio"], input[type="checkbox"] { accent-color: #ff4b4b; cursor: pointer; }
+        label { cursor: pointer; font-size: 14px; }
+        
         table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
         th { text-align: left; padding: 10px; border-bottom: 2px solid var(--st-border); color: rgba(255,255,255,0.6); }
         td { padding: 10px; border-bottom: 1px solid var(--st-border); }
@@ -36,41 +64,53 @@
                 <div class="text-sm opacity-60">by Vectra Insights</div>
                 <div id="display-periodo" class="text-base mt-1 font-semibold opacity-90"></div>
             </div>
-            <div class="flex gap-2">
-                <button class="st-btn-icon" onclick="toggleFilters()">⚙️</button>
+            <div class="flex gap-2 relative">
+                <button class="st-btn-icon" id="btn-config" onclick="event.stopPropagation(); toggleFilters()">⚙️</button>
                 <button class="st-btn-icon" onclick="carregarDados()">🔄</button>
-            </div>
-        </div>
+                
+                <div id="filter-menu" onclick="event.stopPropagation()">
+                    <div class="text-xs opacity-50 mb-4">Tema atual: Escuro</div>
+                    
+                    <div class="mb-6">
+                        <div class="font-bold text-sm mb-3">Visão:</div>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2"><input type="radio" name="visao" value="2026" checked onchange="atualizarInterfacePorAno()"> 2026</label>
+                            <label class="flex items-center gap-2"><input type="radio" name="visao" value="2025" onchange="atualizarInterfacePorAno()"> 2025</label>
+                            <label class="flex items-center gap-2"><input type="radio" name="visao" value="comparativo" onchange="atualizarInterfacePorAno()"> Comparativo</label>
+                        </div>
+                    </div>
 
-        <div id="filter-menu">
-            <label class="block text-xs font-bold mb-1 opacity-50 uppercase">Visão</label>
-            <select id="ano-select" onchange="atualizarInterfacePorAno()" class="w-full st-select mb-4">
-                <option value="2026">2026</option>
-                <option value="2025">2025</option>
-                <option value="comparativo">Comparativo</option>
-            </select>
-            <label class="block text-xs font-bold mb-1 opacity-50 uppercase">Meses</label>
-            <div id="meses-container" class="space-y-1 max-h-48 overflow-y-auto"></div>
+                    <hr class="border-white/10 mb-6">
+
+                    <div class="flex justify-between mb-4">
+                        <button class="action-btn" onclick="marcarTodos(true)">Todos</button>
+                        <button class="action-btn" onclick="marcarTodos(false)">Limpar</button>
+                    </div>
+
+                    <div id="meses-container" class="grid grid-cols-2 gap-y-2">
+                        </div>
+                </div>
+            </div>
         </div>
 
         <div class="kpi-row px-4">
             <div id="kpi-fat-box">
-                <div class="kpi-label">Faturamento</div>
+                <div class="kpi-label opacity-60 text-sm">Faturamento</div>
                 <div id="val-fat-principal" class="kpi-value text-[#22c55e]">R$ 0,00</div>
-                <div id="val-fat-sub" class="kpi-sub"></div>
-                <div id="delta-fat" class="delta"></div>
+                <div id="val-fat-sub" class="text-xs opacity-50 mt-1"></div>
+                <div id="delta-fat" class="font-bold text-sm"></div>
             </div>
             <div id="kpi-des-box">
-                <div class="kpi-label">Despesas</div>
+                <div class="kpi-label opacity-60 text-sm">Despesas</div>
                 <div id="val-des-principal" class="kpi-value text-[#ff4b4b]">R$ 0,00</div>
-                <div id="val-des-sub" class="kpi-sub"></div>
-                <div id="delta-des" class="delta"></div>
+                <div id="val-des-sub" class="text-xs opacity-50 mt-1"></div>
+                <div id="delta-des" class="font-bold text-sm"></div>
             </div>
             <div id="kpi-res-box">
-                <div class="kpi-label">Resultado</div>
+                <div class="kpi-label opacity-60 text-sm">Resultado</div>
                 <div id="val-res-principal" class="kpi-value text-[#3b82f6]">R$ 0,00</div>
-                <div id="val-res-sub" class="kpi-sub"></div>
-                <div id="delta-res" class="delta"></div>
+                <div id="val-res-sub" class="text-xs opacity-50 mt-1"></div>
+                <div id="delta-res" class="font-bold text-sm"></div>
             </div>
         </div>
 
@@ -88,38 +128,26 @@
             <div id="chart-top" class="h-[550px]"></div>
         </div>
 
-        <div id="secao-tabelas" class="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4 mt-4">
+        <div id="secao-tabelas" class="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4 mt-4 mb-8">
             <div class="st-block">
                 <div class="block-title">📄 Detalhe Receitas</div>
                 <div class="text-sm opacity-60 mb-2">Resumo consolidado por tipo de receita</div>
                 <hr class="border-white/10 mb-4">
                 <div class="max-h-[400px] overflow-y-auto">
-                    <table>
-                        <thead><tr><th>Receita</th><th class="val-col">Valor</th></tr></thead>
-                        <tbody id="tab-receitas-body"></tbody>
-                    </table>
+                    <table><thead><tr><th>Receita</th><th class="val-col">Valor</th></tr></thead><tbody id="tab-receitas-body"></tbody></table>
                 </div>
             </div>
             <div class="st-block">
                 <div class="flex justify-between items-center mb-2">
                     <div>
                         <div class="block-title">📄 Detalhe Despesas</div>
-                        <div class="text-sm opacity-60">Resumo e detalhamento por setor e categoria</div>
+                        <div class="text-sm opacity-60">Detalhamento por categoria</div>
                     </div>
-                    <select id="filtro-tabela-despesas" onchange="renderUI()" class="st-select">
-                        <option value="setor">Resumo por setor</option>
-                        <option value="categoria">Categorias de um setor</option>
-                    </select>
-                </div>
-                <div id="container-filtro-setor" class="mb-4" style="display:none;">
-                    <select id="filtro-setor-especifico" onchange="renderUI()" class="st-select w-full md:w-64"></select>
+                    <select id="filtro-setor-especifico" onchange="renderUI()" class="st-select w-40"></select>
                 </div>
                 <hr class="border-white/10 mb-4">
                 <div class="max-h-[400px] overflow-y-auto">
-                    <table>
-                        <thead><tr id="tab-despesas-header"><th>Setor</th><th class="val-col">Valor</th></tr></thead>
-                        <tbody id="tab-despesas-body"></tbody>
-                    </table>
+                    <table><thead><tr><th>Categoria</th><th class="val-col">Valor</th></tr></thead><tbody id="tab-despesas-body"></tbody></table>
                 </div>
             </div>
         </div>
@@ -129,9 +157,17 @@
         let rawData = null;
         const MESES_ORDEM = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
         const PALETA_ST = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#FECB52', '#FF97FF'];
-
         const fmtBR = v => (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        function toggleFilters() { const m = document.getElementById('filter-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block'; }
+
+        // Lógica para fechar o menu ao clicar fora
+        window.addEventListener('click', () => {
+            document.getElementById('filter-menu').style.display = 'none';
+        });
+
+        function toggleFilters() {
+            const m = document.getElementById('filter-menu');
+            m.style.display = m.style.display === 'block' ? 'none' : 'block';
+        }
 
         async function carregarDados() {
             const res = await fetch(`/api/data`);
@@ -139,27 +175,33 @@
             if(rawData.status === 'success') atualizarInterfacePorAno();
         }
 
+        function marcarTodos(status) {
+            document.querySelectorAll('#meses-container input').forEach(i => i.checked = status);
+            renderUI();
+        }
+
         function atualizarInterfacePorAno() {
             if(!rawData) return;
-            const visao = document.getElementById('ano-select').value;
+            const visao = document.querySelector('input[name="visao"]:checked').value;
             const ativos = (visao === "2025") ? rawData.meses_disponiveis_2025 : rawData.meses_disponiveis_2026;
-            document.getElementById('meses-container').innerHTML = MESES_ORDEM.filter(m => ativos.includes(m))
-                .map(m => `<label class="flex items-center gap-2 cursor-pointer py-1 hover:bg-white/5 rounded px-2"><input type="checkbox" value="${m}" checked onchange="renderUI()"> ${m}</label>`).join('');
             
-            // Popular o dropdown de setores disponíveis (ORDEM ALFABÉTICA)
-            const ano = visao === "comparativo" ? "ano_2026" : `ano_${visao}`;
-            const setoresUnicos = [...new Set(rawData[ano].despesas_res.map(d => d.Setor))].sort();
-            const selectSetor = document.getElementById('filtro-setor-especifico');
-            selectSetor.innerHTML = setoresUnicos.map(s => `<option value="${s}">${s}</option>`).join('');
+            document.getElementById('meses-container').innerHTML = MESES_ORDEM
+                .filter(m => ativos.includes(m))
+                .map(m => `<label class="flex items-center gap-2"><input type="checkbox" value="${m}" checked onchange="renderUI()"> ${m}</label>`)
+                .join('');
+            
+            const anoKey = (visao === "comparativo" || visao === "2026") ? "ano_2026" : "ano_2025";
+            const setores = [...new Set(rawData[anoKey].despesas_res.map(d => d.Setor))].sort();
+            document.getElementById('filtro-setor-especifico').innerHTML = setores.map(s => `<option value="${s}">${s}</option>`).join('');
             
             renderUI();
         }
 
         function renderUI() {
             if(!rawData) return;
-            const visao = document.getElementById('ano-select').value;
+            const visao = document.querySelector('input[name="visao"]:checked').value;
             const mesesSel = Array.from(document.querySelectorAll('#meses-container input:checked')).map(i => i.value);
-            document.getElementById('display-periodo').innerHTML = `Período: ${mesesSel.join(', ')}`;
+            document.getElementById('display-periodo').innerHTML = `Período: ${mesesSel.join(', ') || 'Nenhum mês selecionado'}`;
 
             const mainContainer = document.getElementById('main-charts-container');
             const tendenciaSecao = document.getElementById('secao-tendencia');
@@ -196,40 +238,10 @@
             renderTendencia(r, dr, meses);
             renderTopBarras(dd);
             
-            // TABELA RECEITAS (ORDEM ALFABÉTICA)
             fillTable('tab-receitas-body', aggregate(r, 'Receita'), true);
-            
-            // TABELA DESPESAS COM LÓGICA DE SETOR ESPECÍFICO
-            const modoTabela = document.getElementById('filtro-tabela-despesas').value;
-            const containerSetor = document.getElementById('container-filtro-setor');
-            const headerDespesa = document.getElementById('tab-despesas-header');
-
-            if (modoTabela === 'setor') {
-                containerSetor.style.display = 'none';
-                headerDespesa.innerHTML = '<th>Setor</th><th class="val-col">Valor</th>';
-                fillTable('tab-despesas-body', aggregate(dr, 'Setor'), true);
-            } else {
-                containerSetor.style.display = 'block';
-                const setorSel = document.getElementById('filtro-setor-especifico').value;
-                const ddFiltrado = dd.filter(d => d.Setor === setorSel);
-                headerDespesa.innerHTML = '<th>Categoria</th><th class="val-col">Valor</th>';
-                fillTable('tab-despesas-body', aggregate(ddFiltrado, 'Categoria'), true);
-            }
+            const setorSel = document.getElementById('filtro-setor-especifico').value;
+            fillTable('tab-despesas-body', aggregate(dd.filter(d => d.Setor === setorSel), 'Categoria'), true);
         }
-
-        function fillTable(id, data, alfabetica = false) {
-            const body = document.getElementById(id);
-            let items = Object.entries(data);
-            // Ordenação: Alfabética (se solicitado) ou por Valor (padrão)
-            if (alfabetica) {
-                items.sort((a, b) => a[0].localeCompare(b[0]));
-            } else {
-                items.sort((a, b) => b[1] - a[1]);
-            }
-            body.innerHTML = items.map(([k, v]) => `<tr><td>${k}</td><td class="val-col">R$ ${fmtBR(v)}</td></tr>`).join('');
-        }
-
-        // --- (Restante das funções de gráfico permanecem iguais) ---
 
         function renderModoComparativo(meses) {
             const d26 = rawData.ano_2026; const d25 = rawData.ano_2025;
@@ -237,48 +249,92 @@
             atualizarKPI("fat", somar(d26.receitas), somar(d25.receitas), "2025");
             atualizarKPI("des", somar(d26.despesas_res), somar(d25.despesas_res), "2025");
             atualizarKPI("res", somar(d26.receitas)-somar(d26.despesas_res), somar(d25.receitas)-somar(d25.despesas_res), "2025");
+            
             document.getElementById('main-charts-container').innerHTML = `
                 <div class="st-block"><h3>Faturamento</h3><div id="c-fat" class="h-80"></div></div>
                 <div class="st-block"><h3>Despesas</h3><div id="c-des" class="h-80"></div></div>
                 <div class="st-block"><h3>Resultado</h3><div id="c-res" class="h-80"></div></div>`;
+            
             const getS = (dados, m) => m.map(mes => dados.filter(x => x.Mes === mes).reduce((a,b) => a+b.Valor, 0));
-            const plot = (id, s25, s26, cor) => Plotly.newPlot(id, [{ x: meses, y: s25, name: '2025', type: 'bar', marker: {color: '#94A3B8'} },{ x: meses, y: s26, name: '2026', type: 'bar', marker: {color: cor} }], { barmode: 'group', paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: {color: '#fff'}, margin: {t:20, b:40, l:40, r:10}, showlegend: false }, {displayModeBar: false});
-            plot('c-fat', getS(d25.receitas, meses), getS(d26.receitas, meses), '#22c55e');
-            plot('c-des', getS(d25.despesas_res, meses), getS(d26.despesas_res, meses), '#ff4b4b');
+            const plotComp = (id, s25, s26, cor) => {
+                Plotly.newPlot(id, [
+                    { x: meses, y: s25, name: '2025', type: 'bar', marker: {color: '#94A3B8'} },
+                    { x: meses, y: s26, name: '2026', type: 'bar', marker: {color: cor} }
+                ], { barmode: 'group', paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: {color: '#fff'}, margin: {t:20, b:40, l:40, r:10}, showlegend: false }, {displayModeBar: false});
+            };
+
+            plotComp('c-fat', getS(d25.receitas, meses), getS(d26.receitas, meses), '#22c55e');
+            plotComp('c-des', getS(d25.despesas_res, meses), getS(d26.despesas_res, meses), '#ff4b4b');
             const res25 = meses.map(m => getS(d25.receitas, [m])[0] - getS(d25.despesas_res, [m])[0]);
             const res26 = meses.map(m => getS(d26.receitas, [m])[0] - getS(d26.despesas_res, [m])[0]);
-            plot('c-res', res25, res26, '#3b82f6');
-        }
-
-        function atualizarKPI(id, vP, vS, label) {
-            document.getElementById(`val-${id}-principal`).innerText = "R$ " + fmtBR(vP);
-            if (vS !== null) {
-                document.getElementById(`val-${id}-sub`).innerText = `R$ ${fmtBR(vS)} (${label})`;
-                const dif = ((vP / vS) - 1) * 100;
-                const el = document.getElementById(`delta-${id}`);
-                el.innerText = (dif >= 0 ? "+" : "") + dif.toFixed(1) + "%";
-                el.style.color = (id === 'des' ? dif < 0 : dif > 0) ? "#22c55e" : "#ff4b4b";
-            } else { document.getElementById(`val-${id}-sub`).innerText = ""; document.getElementById(`delta-${id}`).innerText = ""; }
+            plotComp('c-res', res25, res26, '#3b82f6');
         }
 
         function renderPie(div, data) {
-            const sortedData = Object.entries(data).sort((a, b) => b[1] - a[1]);
-            Plotly.newPlot(div, [{ values: sortedData.map(d=>d[1]), labels: sortedData.map(d=>d[0]), type: 'pie', hole: 0.55, marker: { colors: PALETA_ST }, textinfo: 'percent', hoverlabel: { bgcolor: '#262730' }, insidetextorientation: 'radial', domain: { x: [0, 0.7], y: [0.1, 0.9] } }], { showlegend: true, paper_bgcolor: 'transparent', font: { color: '#fff', size: 12 }, margin: { l: 50, r: 150, t: 50, b: 50 }, legend: { x: 0.85, y: 0.5, xanchor: 'left', yanchor: 'middle', orientation: 'v', font: { size: 11 } } }, { displayModeBar: false });
+            const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
+            Plotly.newPlot(div, [{
+                values: sorted.map(d => d[1]), labels: sorted.map(d => d[0]), type: 'pie', hole: 0.55,
+                marker: { colors: PALETA_ST }, textinfo: 'percent', hoverlabel: { bgcolor: '#262730' },
+                insidetextorientation: 'radial', domain: { x: [0, 0.7], y: [0.1, 0.9] }
+            }], {
+                showlegend: true, paper_bgcolor: 'transparent', font: { color: '#fff', size: 12 },
+                margin: { l: 50, r: 150, t: 50, b: 50 },
+                legend: { x: 0.85, y: 0.5, xanchor: 'left', yanchor: 'middle', orientation: 'v', font: { size: 11 } }
+            }, { displayModeBar: false });
         }
 
         function renderTendencia(r, dr, meses) {
             const f = meses.map(m => r.filter(x => x.Mes === m).reduce((a, b) => a + b.Valor, 0));
             const d = meses.map(m => dr.filter(x => x.Mes === m).reduce((a, b) => a + b.Valor, 0));
             const res = f.map((v, i) => v - d[i]);
-            Plotly.newPlot('chart-tendencia', [{ x: meses, y: f, name: 'Faturamento', mode: 'lines+markers', line: { color: '#22c55e', width: 3 }, marker: { size: 8 } }, { x: meses, y: d, name: 'Despesas', mode: 'lines+markers', line: { color: '#ff4b4b', width: 3 }, marker: { size: 8 } }, { x: meses, y: res, name: 'Resultado', mode: 'lines+markers', line: { color: '#3b82f6', width: 3 }, marker: { size: 8 } }], { paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: { color: '#fff', family: 'Source Sans Pro' }, margin: { t: 40, b: 40, l: 80, r: 150 }, hovermode: 'x unified', hoverlabel: { bgcolor: '#262730', bordercolor: '#444', font: { color: '#fff' } }, xaxis: { showgrid: true, gridcolor: 'rgba(255,255,255,0.1)' }, yaxis: { title: 'Valor', showgrid: true, gridcolor: 'rgba(255,255,255,0.1)', tickformat: '.2s' }, legend: { x: 1.05, y: 1, xanchor: 'left', yanchor: 'top', font: { size: 12 } }, showlegend: true }, { displayModeBar: false });
+            Plotly.newPlot('chart-tendencia', [
+                { x: meses, y: f, name: 'Faturamento', mode: 'markers+lines', line: { color: '#22c55e', width: 3 }, marker: { size: 8 } },
+                { x: meses, y: d, name: 'Despesas', mode: 'markers+lines', line: { color: '#ff4b4b', width: 3 }, marker: { size: 8 } },
+                { x: meses, y: res, name: 'Resultado', mode: 'markers+lines', line: { color: '#3b82f6', width: 3 }, marker: { size: 8 } }
+            ], {
+                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: { color: '#fff', family: 'Source Sans Pro' },
+                margin: { t: 40, b: 40, l: 80, r: 150 }, hovermode: 'x unified',
+                hoverlabel: { bgcolor: '#262730', bordercolor: '#444', font: { color: '#fff' } },
+                xaxis: { showgrid: true, gridcolor: 'rgba(255,255,255,0.1)' },
+                yaxis: { title: 'Valor', showgrid: true, gridcolor: 'rgba(255,255,255,0.1)', tickformat: '.2s' },
+                legend: { x: 1.05, y: 1, xanchor: 'left', yanchor: 'top', font: { size: 12 } }, showlegend: true
+            }, { displayModeBar: false });
         }
 
         function renderTopBarras(dd) {
             const top = Object.entries(aggregate(dd, 'Categoria')).sort((a, b) => b[1] - a[1]).slice(0, 12).reverse();
-            Plotly.newPlot('chart-top', [{ x: top.map(x=>x[1]), y: top.map(x=>x[0]), type: 'bar', orientation: 'h', marker: { color: '#3b82f6' }, text: top.map(x=>"R$ "+fmtBR(x[1])), textposition: 'outside', hovertemplate: '%{text}<extra></extra>', cliponaxis: false }], { paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: { color: '#fff' }, margin: { l: 250, r: 150, t: 20, b: 20 }, xaxis: { visible: false, range: [0, Math.max(...top.map(x=>x[1])) * 1.2] }, yaxis: { automargin: true }, hoverlabel: { bgcolor: '#262730', font: { color: '#fff' } } }, { displayModeBar: false });
+            Plotly.newPlot('chart-top', [{
+                x: top.map(x => x[1]), y: top.map(x => x[0]), type: 'bar', orientation: 'h', 
+                marker: { color: '#3b82f6' }, text: top.map(x => "R$ " + fmtBR(x[1])), 
+                textposition: 'outside', hovertemplate: '%{text}<extra></extra>', cliponaxis: false
+            }], {
+                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: { color: '#fff' },
+                margin: { l: 250, r: 150, t: 20, b: 20 },
+                xaxis: { visible: false, range: [0, Math.max(...top.map(x => x[1])) * 1.2] },
+                yaxis: { automargin: true }, hoverlabel: { bgcolor: '#262730', font: { color: '#fff' } }
+            }, { displayModeBar: false });
+        }
+
+        function fillTable(id, data, alfabetica = false) {
+            const body = document.getElementById(id);
+            let items = Object.entries(data);
+            if (alfabetica) items.sort((a, b) => a[0].localeCompare(b[0]));
+            else items.sort((a, b) => b[1] - a[1]);
+            body.innerHTML = items.map(([k, v]) => `<tr><td>${k}</td><td class="val-col">R$ ${fmtBR(v)}</td></tr>`).join('');
         }
 
         function aggregate(arr, key) { return arr.reduce((acc, obj) => { acc[obj[key]] = (acc[obj[key]] || 0) + obj.Valor; return acc; }, {}); }
+        function atualizarKPI(id, vP, vS, label) {
+            document.getElementById(`val-${id}-principal`).innerText = "R$ " + fmtBR(vP);
+            if (vS !== null) {
+                const dif = ((vP / vS) - 1) * 100;
+                document.getElementById(`val-${id}-sub`).innerText = `R$ ${fmtBR(vS)} (${label})`;
+                const el = document.getElementById(`delta-${id}`);
+                el.innerText = (dif >= 0 ? "+" : "") + dif.toFixed(1) + "%";
+                el.style.color = (id === 'des' ? dif < 0 : dif > 0) ? "#22c55e" : "#ff4b4b";
+            } else { document.getElementById(`val-${id}-sub`).innerText = ""; document.getElementById(`delta-${id}`).innerText = ""; }
+        }
+
         window.onload = carregarDados;
     </script>
 </body>
