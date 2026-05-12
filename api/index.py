@@ -20,7 +20,7 @@ app.add_middleware(
 )
 
 # =========================================================
-# CONSTANTES E CONFIGURAÇÕES (Preservadas do original)
+# CONSTANTES E CONFIGURAÇÕES
 # =========================================================
 SHEET_ID_2026 = "1Bh2Xb1t5m7Si3HXgRVHkrQ5ALtsBRV_wTTU1G-EQo0A"
 SHEET_ID_2025 = "1JEruYIxHbwPlQS45oTFH60l3i4hqF_3idM2Vu8sFPHs"
@@ -35,10 +35,13 @@ BLOCOS_DESPESA_EXATOS = {"DIVERSOS", "DESPESAS DIVERSAS", "ACESSÓRIOS", "ACESSO
 BLOCOS_PARADA_GERAIS = {"RESULTADO", "RECEITAS", "TOTAL", "FATURAMENTO"}
 
 # =========================================================
-# FUNÇÕES DE TRATAMENTO DE DADOS (Sua Lógica Original)
+# FUNÇÕES DE TRATAMENTO DE DADOS
 # =========================================================
-def texto(v): return str(v).strip() if pd.notna(v) else ""
-def numero(v): return pd.to_numeric(v, errors="coerce")
+def texto(v): 
+    return str(v).strip() if pd.notna(v) else ""
+
+def numero(v): 
+    return pd.to_numeric(v, errors="coerce")
 
 def limpar_prefixo_despesas(nome):
     t = texto(nome).strip()
@@ -46,12 +49,16 @@ def limpar_prefixo_despesas(nome):
     mapa = {
         "DESPESAS ADMINISTRATIVAS": "Administrativas",
         "DESPESAS DA OFICINA MECÂNICA": "Mecânica",
+        "DESPESAS DA OFICINA MECANICA": "Mecânica",
         "DESPESAS DE BORRACHARIA": "Borracharia",
+        "DESPESAS DA BORRACHARIA": "Borracharia",
         "DESPESAS DA ELÉTRICA": "Elétrica",
+        "DESPESAS DA ELETRICA": "Elétrica",
         "DESPESAS DIVERSAS": "Abastecimento/Descargas",
         "INVESTIMENTOS": "Financiamentos/Imobilizados",
     }
-    if tu in mapa: return mapa[tu]
+    if tu in mapa: 
+        return mapa[tu]
     return t
 
 def eh_bloco_despesa(valor):
@@ -62,21 +69,28 @@ def processar_planilha(xl):
     receitas, despesas_res, despesas_det = [], [], []
 
     for aba in xl.sheet_names:
-        if aba not in MESES: continue
+        if aba not in MESES: 
+            continue
+            
         df = pd.read_excel(xl, sheet_name=aba, usecols="A:D", header=None, names=["ColA", "ColB", "ColC", "ColD"])
         df["ColA"], df["ColB"] = df["ColA"].apply(texto), df["ColB"].apply(texto)
         df["ColC"], df["ColD"] = df["ColC"].apply(numero), df["ColD"].apply(numero)
 
         for i in df.index:
-            if not eh_bloco_despesa(df.loc[i, "ColA"]): continue
+            if not eh_bloco_despesa(df.loc[i, "ColA"]): 
+                continue
+                
             setor = limpar_prefixo_despesas(df.loc[i, "ColA"])
             total_setor = df.loc[i + 1, "ColD"] if (i + 1) in df.index else 0
+            
             if pd.notna(total_setor) and total_setor != 0:
                 despesas_res.append({"Mes": aba, "Setor": setor, "Valor": abs(float(total_setor))})
 
             for j in range(i + 1, len(df)):
                 bloco_j = texto(df.loc[j, "ColA"])
-                if j > i + 1 and (eh_bloco_despesa(bloco_j) or bloco_j.upper() in BLOCOS_PARADA_GERAIS): break
+                if j > i + 1 and (eh_bloco_despesa(bloco_j) or bloco_j.upper() in BLOCOS_PARADA_GERAIS): 
+                    break
+                
                 cat, val = limpar_prefixo_despesas(df.loc[j, "ColB"]), df.loc[j, "ColC"]
                 if cat and pd.notna(val) and val != 0:
                     despesas_det.append({"Mes": aba, "Setor": setor, "Categoria": cat, "Valor": abs(float(val))})
@@ -84,7 +98,9 @@ def processar_planilha(xl):
         idx_fat = df[df["ColA"].str.upper() == "FATURAMENTO"].index
         if not idx_fat.empty:
             for k in range(idx_fat[0] + 1, len(df)):
-                if texto(df.loc[k, "ColA"]).upper() in BLOCOS_PARADA_GERAIS or eh_bloco_despesa(df.loc[k, "ColA"]): break
+                if texto(df.loc[k, "ColA"]).upper() in BLOCOS_PARADA_GERAIS or eh_bloco_despesa(df.loc[k, "ColA"]): 
+                    break
+                
                 r_nome, r_val = texto(df.loc[k, "ColB"]), df.loc[k, "ColC"]
                 if r_nome and pd.notna(r_val) and r_val > 0:
                     receitas.append({"Mes": aba, "Receita": r_nome, "Valor": float(r_val)})
@@ -102,7 +118,6 @@ def carregar_dados(sheet_id):
 # =========================================================
 # ENDPOINTS DA API
 # =========================================================
-
 @app.get("/api/data")
 async def get_financial_data():
     try:
@@ -111,9 +126,8 @@ async def get_financial_data():
         r25, dr25, dd25 = carregar_dados(SHEET_ID_2025)
 
         # Identificamos quais meses realmente têm lançamentos (Valores > 0)
-        # Isso permite que o frontend marque apenas Jan, Fev e Mar em 2026 automaticamente
-        meses_ativos_26 = r26[r26["Valor"] > 0]["Mes"].unique().tolist()
-        meses_ativos_25 = r25[r25["Valor"] > 0]["Mes"].unique().tolist()
+        meses_ativos_26 = r26[r26["Valor"] > 0]["Mes"].unique().tolist() if not r26.empty else []
+        meses_ativos_25 = r25[r25["Valor"] > 0]["Mes"].unique().tolist() if not r25.empty else []
         
         return {
             "status": "success",
@@ -133,3 +147,7 @@ async def get_financial_data():
         }
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+@app.get("/")
+async def health_check():
+    return {"status": "online", "service": "JRM Financial API"}
