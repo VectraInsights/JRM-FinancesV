@@ -83,6 +83,11 @@
             </div>
         </div>
 
+        <div id="detalhe-despesas-container" class="st-block mx-4 mt-4">
+            <div class="block-title">Top Despesas Detalhadas</div>
+            <div id="chart-top" class="h-[550px]"></div>
+        </div>
+
         <div id="secao-tabelas" class="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4 mt-4">
             <div class="st-block">
                 <div class="block-title">📄 Detalhe Receitas</div>
@@ -97,19 +102,11 @@
                 </div>
             </div>
         </div>
-
-        <div id="detalhe-despesas-container" class="st-block mx-4 mt-4">
-            <div class="block-title">Top Despesas Detalhadas</div>
-            <div id="chart-top" class="h-[550px]"></div>
-        </div>
     </div>
 
     <script>
         let rawData = null;
         const MESES_ORDEM = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-        
-        // PALETA EXATA NA ORDEM SOLICITADA:
-        // azul, vermelho, verde, roxo, laranja, azul claro, rosa, amarelo, lilás
         const PALETA_ST = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#FECB52', '#FF97FF'];
 
         const fmtBR = v => (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -236,7 +233,6 @@
             body.innerHTML = sorted.map(([k, v]) => `<tr><td>${k}</td><td class="val-col">R$ ${fmtBR(v)}</td></tr>`).join('');
         }
 
-        // FUNÇÃO CORRIGIDA COM ORDENAÇÃO PARA TRAVAR AS CORES POR TAMANHO
         function renderPie(div, data) {
             const sortedData = Object.entries(data).sort((a, b) => b[1] - a[1]);
             const labels = sortedData.map(d => d[0]);
@@ -261,7 +257,7 @@
                 font: { color: '#fff', size: 12 },
                 margin: { l: 50, r: 150, t: 50, b: 50 },
                 legend: {
-                    x: 0.85, // Aproxima a legenda do gráfico encolhido
+                    x: 0.85,
                     y: 0.5,
                     xanchor: 'left',
                     yanchor: 'middle',
@@ -270,118 +266,55 @@
                 }
             }, { displayModeBar: false });
         }
-        
+
         function renderTendencia(r, dr, meses) {
-            // Cálculo das séries
             const f = meses.map(m => r.filter(x => x.Mes === m).reduce((a, b) => a + b.Valor, 0));
             const d = meses.map(m => dr.filter(x => x.Mes === m).reduce((a, b) => a + b.Valor, 0));
-            const res = f.map((v, i) => v - d[i]); // Linha de Resultado
+            const res = f.map((v, i) => v - d[i]);
 
             const traces = [
-                {
-                    x: meses,
-                    y: f,
-                    name: 'Faturamento',
-                    mode: 'lines+markers',
-                    line: { color: '#22c55e', width: 3 },
-                    marker: { size: 8 }
-                },
-                {
-                    x: meses,
-                    y: d,
-                    name: 'Despesas',
-                    mode: 'lines+markers',
-                    line: { color: '#ff4b4b', width: 3 },
-                    marker: { size: 8 }
-                },
-                {
-                    x: meses,
-                    y: res,
-                    name: 'Resultado',
-                    mode: 'lines+markers',
-                    line: { color: '#3b82f6', width: 3 },
-                    marker: { size: 8 }
-                }
+                { x: meses, y: f, name: 'Faturamento', mode: 'lines+markers', line: { color: '#22c55e', width: 3 }, marker: { size: 8 } },
+                { x: meses, y: d, name: 'Despesas', mode: 'lines+markers', line: { color: '#ff4b4b', width: 3 }, marker: { size: 8 } },
+                { x: meses, y: res, name: 'Resultado', mode: 'lines+markers', line: { color: '#3b82f6', width: 3 }, marker: { size: 8 } }
             ];
 
             const layout = {
-                paper_bgcolor: 'transparent',
-                plot_bgcolor: 'transparent',
+                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                 font: { color: '#fff', family: 'Source Sans Pro' },
                 margin: { t: 40, b: 40, l: 80, r: 150 },
                 hovermode: 'x unified',
-                hoverlabel: {
-                    bgcolor: '#262730', // Cor de fundo escura (igual aos cards)
-                    bordercolor: '#444',
-                    font: { color: '#fff', family: 'Source Sans Pro' }
-                },
-                xaxis: {
-                    showgrid: true,
-                    gridcolor: 'rgba(255,255,255,0.1)',
-                    linecolor: 'rgba(255,255,255,0.2)'
-                },
-                yaxis: {
-                    title: 'Valor',
-                    showgrid: true,
-                    gridcolor: 'rgba(255,255,255,0.1)',
-                    tickformat: '.2s', // Formata como 2M, 4M etc.
-                    linecolor: 'rgba(255,255,255,0.2)'
-                },
-                legend: {
-                    x: 1.05,
-                    y: 1,
-                    xanchor: 'left',
-                    yanchor: 'top',
-                    font: { size: 12 }
-                },
+                hoverlabel: { bgcolor: '#262730', bordercolor: '#444', font: { color: '#fff' } },
+                xaxis: { showgrid: true, gridcolor: 'rgba(255,255,255,0.1)' },
+                yaxis: { title: 'Valor', showgrid: true, gridcolor: 'rgba(255,255,255,0.1)', tickformat: '.2s' },
+                legend: { x: 1.05, y: 1, xanchor: 'left', yanchor: 'top', font: { size: 12 } },
                 showlegend: true
             };
-
             Plotly.newPlot('chart-tendencia', traces, layout, { displayModeBar: false });
         }
 
         function renderTopBarras(dd) {
-            const top = Object.entries(aggregate(dd, 'Categoria'))
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 12)
-                .reverse();
-
+            const top = Object.entries(aggregate(dd, 'Categoria')).sort((a, b) => b[1] - a[1]).slice(0, 12).reverse();
             const values = top.map(x => x[1]);
             const labels = top.map(x => x[0]);
-            const formattedTexts = top.map(x => "R$ " + fmtBR(x[1]));
 
             const trace = {
-                x: values,
-                y: labels,
-                type: 'bar',
-                orientation: 'h',
-                marker: { color: '#3b82f6' },
-                text: formattedTexts,
-                textposition: 'outside',
-                hovertemplate: '%{text}<extra></extra>', 
-                cliponaxis: false // Impede que o texto seja cortado pela área do gráfico
+                x: values, y: labels, type: 'bar', orientation: 'h', marker: { color: '#3b82f6' },
+                text: top.map(x => "R$ " + fmtBR(x[1])), textposition: 'outside',
+                hovertemplate: '%{text}<extra></extra>', cliponaxis: false
             };
 
             const layout = {
-                paper_bgcolor: 'transparent',
-                plot_bgcolor: 'transparent',
-                font: { color: '#fff', family: 'Source Sans Pro' },
-                margin: { l: 250, r: 150, t: 20, b: 20 }, 
-                xaxis: {
-                    visible: false,
-                    range: [0, Math.max(...values) * 1.2] 
-                },
-                yaxis: {
-                    automargin: true
-                },
-                hoverlabel: {
-                    bgcolor: '#262730',
-                    font: { color: '#fff' }
-                }
+                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+                font: { color: '#fff' }, margin: { l: 250, r: 150, t: 20, b: 20 },
+                xaxis: { visible: false, range: [0, Math.max(...values) * 1.2] },
+                yaxis: { automargin: true },
+                hoverlabel: { bgcolor: '#262730', font: { color: '#fff' } }
             };
-
             Plotly.newPlot('chart-top', [trace], layout, { displayModeBar: false });
         }
+
+        function aggregate(arr, key) { return arr.reduce((acc, obj) => { acc[obj[key]] = (acc[obj[key]] || 0) + obj.Valor; return acc; }, {}); }
+        window.onload = carregarDados;
     </script>
 </body>
 </html>
