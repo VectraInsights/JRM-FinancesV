@@ -232,22 +232,51 @@
         // --- (Restante das funções de gráfico permanecem iguais) ---
 
         function renderModoComparativo(meses) {
-            const d26 = rawData.ano_2026; const d25 = rawData.ano_2025;
-            const somar = (lista) => lista.filter(d => meses.includes(d.Mes)).reduce((a,b) => a+b.Valor, 0);
+            const d26 = rawData.ano_2026;
+            const d25 = rawData.ano_2025;
+            const somar = (lista) => lista.filter(d => meses.includes(d.Mes)).reduce((a, b) => a + b.Valor, 0);
+
             atualizarKPI("fat", somar(d26.receitas), somar(d25.receitas), "2025");
             atualizarKPI("des", somar(d26.despesas_res), somar(d25.despesas_res), "2025");
-            atualizarKPI("res", somar(d26.receitas)-somar(d26.despesas_res), somar(d25.receitas)-somar(d25.despesas_res), "2025");
+            atualizarKPI("res", somar(d26.receitas) - somar(d26.despesas_res), somar(d25.receitas) - somar(d25.despesas_res), "2025");
+
+            // Primeiro injetamos o HTML vazio
             document.getElementById('main-charts-container').innerHTML = `
                 <div class="st-block"><h3>Faturamento</h3><div id="c-fat" class="h-80"></div></div>
                 <div class="st-block"><h3>Despesas</h3><div id="c-des" class="h-80"></div></div>
                 <div class="st-block"><h3>Resultado</h3><div id="c-res" class="h-80"></div></div>`;
-            const getS = (dados, m) => m.map(mes => dados.filter(x => x.Mes === mes).reduce((a,b) => a+b.Valor, 0));
-            const plot = (id, s25, s26, cor) => Plotly.newPlot(id, [{ x: meses, y: s25, name: '2025', type: 'bar', marker: {color: '#94A3B8'} },{ x: meses, y: s26, name: '2026', type: 'bar', marker: {color: cor} }], { barmode: 'group', paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: {color: '#fff'}, margin: {t:20, b:40, l:40, r:10}, showlegend: false }, {displayModeBar: false});
-            plot('c-fat', getS(d25.receitas, meses), getS(d26.receitas, meses), '#22c55e');
-            plot('c-des', getS(d25.despesas_res, meses), getS(d26.despesas_res, meses), '#ff4b4b');
-            const res25 = meses.map(m => getS(d25.receitas, [m])[0] - getS(d25.despesas_res, [m])[0]);
-            const res26 = meses.map(m => getS(d26.receitas, [m])[0] - getS(d26.despesas_res, [m])[0]);
-            plot('c-res', res25, res26, '#3b82f6');
+
+            // Usamos o setTimeout para garantir que os IDs 'c-fat', etc, já estejam no DOM
+            setTimeout(() => {
+                const getS = (dados, m) => m.map(mes => dados.filter(x => x.Mes === mes).reduce((a, b) => a + b.Valor, 0));
+
+                const plotComp = (id, s25, s26, cor) => {
+                    const data = [
+                        { x: meses, y: s25, name: '2025', type: 'bar', marker: { color: '#94A3B8' } },
+                        { x: meses, y: s26, name: '2026', type: 'bar', marker: { color: cor } }
+                    ];
+
+                    const layout = {
+                        barmode: 'group',
+                        paper_bgcolor: 'transparent',
+                        plot_bgcolor: 'transparent',
+                        font: { color: '#fff' },
+                        margin: { t: 20, b: 40, l: 40, r: 10 },
+                        showlegend: false,
+                        xaxis: { automargin: true },
+                        yaxis: { automargin: true, tickformat: '.2s' }
+                    };
+
+                    Plotly.newPlot(id, data, layout, { displayModeBar: false, responsive: true });
+                };
+
+                plotComp('c-fat', getS(d25.receitas, meses), getS(d26.receitas, meses), '#22c55e');
+                plotComp('c-des', getS(d25.despesas_res, meses), getS(d26.despesas_res, meses), '#ff4b4b');
+
+                const res25 = meses.map(m => getS(d25.receitas, [m])[0] - getS(d25.despesas_res, [m])[0]);
+                const res26 = meses.map(m => getS(d26.receitas, [m])[0] - getS(d26.despesas_res, [m])[0]);
+                plotComp('c-res', res25, res26, '#3b82f6');
+            }, 50); // 50 milissegundos é o suficiente para o navegador renderizar o layout
         }
 
         function atualizarKPI(id, vP, vS, label) {
