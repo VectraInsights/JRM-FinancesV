@@ -104,15 +104,11 @@
         let rawData = null;
         const MESES_ORDEM = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-        // MAPA DE CORES POR SEGMENTO (Fidelidade total ao seu print)
         const MAPA_CORES = {
-            // Receitas
             "Correios": "#636EFA",
             "Fretes internos": "#EF553B",
             "Fretes diversos": "#00CC96",
             "Rendimento sobre aplicações": "#AB63FA",
-            
-            // Setores / Despesas
             "Administrativas": "#636EFA",
             "Abastecimento/Descargas": "#EF553B",
             "Financiamentos/Imobilizados": "#00CC96",
@@ -125,7 +121,11 @@
         };
 
         const fmtBR = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        function toggleFilters() { const m = document.getElementById('filter-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block'; }
+        
+        function toggleFilters() { 
+            const m = document.getElementById('filter-menu'); 
+            m.style.display = m.style.display === 'block' ? 'none' : 'block'; 
+        }
 
         async function carregarDados() {
             const ano = document.getElementById('ano-select').value;
@@ -165,49 +165,63 @@
         }
 
         function renderCharts(r, dr, dd, meses) {
-            const layoutPizza = {
-                paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-                font: { color: '#fafafa', family: 'Source Sans Pro', size: 14 },
+            const configEsconderBotoes = { displayModeBar: false };
+
+            const layoutBase = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#fafafa', family: 'Source Sans Pro', size: 12 },
                 margin: { t: 30, b: 30, l: 30, r: 150 },
-                showlegend: true, legend: { x: 1, y: 0.5 },
-                separators: ',.'
+                showlegend: true,
+                legend: { x: 1, y: 0.5, font: { size: 12 } },
+                separators: ',.',
+                hoverlabel: { bgcolor: '#262730', bordercolor: '#444', font: { color: '#fafafa' } }
             };
 
-            // Receitas
             const rAgg = aggregate(r, 'Receita');
             const rLabels = Object.keys(rAgg);
             Plotly.newPlot('chart-receitas', [{ 
-                values: Object.values(rAgg), labels: rLabels, 
+                values: Object.values(rAgg), 
+                labels: rLabels, 
                 type: 'pie', hole: 0.55, 
                 marker: { colors: getCoresParaLabels(rLabels) },
                 textinfo: 'percent'
-            }], layoutPizza);
+            }], layoutBase, configEsconderBotoes);
 
-            // Despesas
             const drAgg = aggregate(dr, 'Setor');
             const drLabels = Object.keys(drAgg);
             Plotly.newPlot('chart-despesas', [{ 
-                values: Object.values(drAgg), labels: drLabels, 
+                values: Object.values(drAgg), 
+                labels: drLabels, 
                 type: 'pie', hole: 0.55, 
                 marker: { colors: getCoresParaLabels(drLabels) },
                 textinfo: 'percent'
-            }], layoutPizza);
+            }], layoutBase, configEsconderBotoes);
 
-            // Tendência
             const tFat = meses.map(m => r.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
             const tDes = meses.map(m => dr.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
-            Plotly.newPlot('chart-tendencia', [
-                { x: meses, y: tFat, name: 'Faturamento', line: {color: '#22c55e', width: 4}, mode: 'lines+markers' },
-                { x: meses, y: tDes, name: 'Despesas', line: {color: '#ff4b4b', width: 4}, mode: 'lines+markers' },
-                { x: meses, y: tFat.map((v,i) => v - tDes[i]), name: 'Resultado', line: {color: '#3b82f6', width: 4}, mode: 'lines+markers' }
-            ], { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: '#fafafa' }, margin: { t:20, b:40, l:60, r:20 }, separators: ',.', yaxis: { tickformat: ',.2f' }, hovermode: 'x unified' });
+            
+            const layoutTendencia = {
+                ...layoutBase,
+                margin: { t: 20, b: 40, l: 80, r: 40 },
+                legend: { orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center' },
+                yaxis: { tickformat: ',.2f', gridcolor: 'rgba(255,255,255,0.05)' },
+                xaxis: { gridcolor: 'rgba(255,255,255,0.05)' },
+                hovermode: 'x unified'
+            };
 
-            // Top Despesas
+            Plotly.newPlot('chart-tendencia', [
+                { x: meses, y: tFat, name: 'Faturamento', line: {color: '#22c55e', width: 4}, mode: 'lines+markers', hovertemplate: 'Faturamento: R$ %{y:,.2f}<extra></extra>' },
+                { x: meses, y: tDes, name: 'Despesas', line: {color: '#ff4b4b', width: 4}, mode: 'lines+markers', hovertemplate: 'Despesas: R$ %{y:,.2f}<extra></extra>' },
+                { x: meses, y: tFat.map((v,i) => v - tDes[i]), name: 'Resultado', line: {color: '#3b82f6', width: 4}, mode: 'lines+markers', hovertemplate: 'Resultado: R$ %{y:,.2f}<extra></extra>' }
+            ], layoutTendencia, configEsconderBotoes);
+
             const top = Object.entries(aggregate(dd, 'Categoria')).sort((a,b) => b[1]-a[1]).slice(0, 10).reverse();
             Plotly.newPlot('chart-top', [{ 
                 x: top.map(x => x[1]), y: top.map(x => x[0]), type: 'bar', orientation: 'h', marker: {color: '#79B3E1'},
-                text: top.map(x => "R$ " + fmtBR(x[1])), textposition: 'outside', cliponaxis: false
-            }], { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: '#fafafa' }, margin: { l: 220, r: 120 }, xaxis: { visible: false } });
+                text: top.map(x => "R$ " + fmtBR(x[1])), textposition: 'outside', cliponaxis: false,
+                hovertemplate: '%{y}: R$ %{x:,.2f}<extra></extra>'
+            }], { ...layoutBase, margin: { l: 220, r: 120 }, xaxis: { visible: false } }, configEsconderBotoes);
         }
 
         function renderTables(r, dr, dd) {
@@ -236,7 +250,13 @@
             }
         }
 
-        function aggregate(arr, key) { return arr.reduce((acc, obj) => { acc[obj[key]] = (acc[obj[key]] || 0) + obj.Valor; return acc; }, {}); }
+        function aggregate(arr, key) { 
+            return arr.reduce((acc, obj) => { 
+                acc[obj[key]] = (acc[obj[key]] || 0) + obj.Valor; 
+                return acc; 
+            }, {}); 
+        }
+
         window.onload = carregarDados;
     </script>
 </body>
