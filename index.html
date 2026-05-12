@@ -9,45 +9,40 @@
     <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --st-bg: #0e1117; --st-text: #fafafa; --st-border: rgba(250, 250, 250, 0.1); }
-        body { background-color: var(--st-bg); color: var(--st-text); font-family: 'Source Sans Pro', sans-serif; margin: 0; padding: 0; }
+        body { background-color: var(--st-bg); color: var(--st-text); font-family: 'Source Sans Pro', sans-serif; margin: 0; }
         
-        /* Dashboard ocupa toda a largura (Imagem 4 pedido) */
-        .full-container { width: 96%; margin: 0 auto; padding: 2rem 0; }
+        /* Dashboard Full-Width para aproveitar toda a tela */
+        .full-container { width: 98%; margin: 0 auto; padding: 1rem 0; }
+        
+        /* Estilo Botões de Ação */
+        .st-btn-icon { background: #262730; border: 1px solid var(--st-border); border-radius: 4px; padding: 6px; cursor: pointer; }
+        #filter-menu { display: none; position: absolute; right: 1%; top: 4rem; background: #262730; border: 1px solid var(--st-border); border-radius: 8px; padding: 1.5rem; z-index: 100; width: 280px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
 
-        .brand-title { font-size: 1.5rem; font-weight: 700; }
-        .brand-subtitle { color: rgba(250, 250, 250, 0.6); font-size: 0.9rem; }
+        /* KPIs Proporcionais */
+        .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0 2rem 0; text-align: center; }
+        .kpi-label { font-size: 1rem; opacity: 0.8; margin-bottom: 0.2rem; }
+        .kpi-value { font-size: 2.2rem; font-weight: 700; line-height: 1.1; }
 
-        /* Popover de Filtros */
-        .st-btn-icon { background: #262730; border: 1px solid var(--st-border); border-radius: 4px; padding: 8px; cursor: pointer; }
-        #filter-menu { display: none; position: absolute; right: 2%; top: 5rem; background: #262730; border: 1px solid var(--st-border); border-radius: 8px; padding: 1.5rem; z-index: 100; width: 280px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-
-        /* KPIs Proporcionais (Imagem 2) */
-        .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 2rem 0 3rem 0; text-align: center; }
-        .kpi-label { font-size: 1rem; opacity: 0.8; margin-bottom: 0.3rem; }
-        .kpi-value { font-size: 2.2rem; font-weight: 700; }
-
-        /* Blocos de Gráfico */
-        .st-block { border: 1px solid var(--st-border); border-radius: 0.5rem; padding: 1.2rem; margin-bottom: 1.5rem; background: transparent; }
-        .block-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+        /* Blocos de Gráfico (Cards maiores) */
+        .st-block { border: 1px solid var(--st-border); border-radius: 0.5rem; padding: 1.2rem; margin-bottom: 1rem; }
+        .block-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; }
 
         /* Tabelas */
-        .st-select, .st-input { background: #262730; border: 1px solid var(--st-border); color: white; padding: 0.4rem; border-radius: 4px; font-size: 0.85rem; }
+        .st-select, .st-input { background: #0e1117; border: 1px solid var(--st-border); color: white; padding: 0.4rem; border-radius: 4px; font-size: 0.85rem; }
         table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
         th { text-align: left; padding: 10px; border-bottom: 2px solid var(--st-border); color: rgba(255,255,255,0.6); }
         td { padding: 10px; border-bottom: 1px solid var(--st-border); }
         .val-col { text-align: right; font-family: 'Source Code Pro', monospace; font-weight: 600; }
-        
-        hr { border: 0; border-top: 1px solid var(--st-border); margin: 2.5rem 0; }
     </style>
 </head>
 <body>
 
     <div class="full-container">
-        <div class="flex justify-between items-start mb-8">
+        <div class="flex justify-between items-start mb-4 px-4">
             <div>
-                <div class="brand-title">📊 JRM Financial Dashboard</div>
-                <div class="brand-subtitle">by Vectra Insights</div>
-                <div id="display-periodo" class="text-sm mt-1 font-semibold"></div>
+                <div class="text-2xl font-bold">📊 JRM Financial Dashboard</div>
+                <div class="text-sm opacity-60">by Vectra Insights</div>
+                <div id="display-periodo" class="text-base mt-1 font-semibold opacity-90"></div>
             </div>
             <div class="flex gap-2">
                 <button class="st-btn-icon" onclick="toggleFilters()">⚙️</button>
@@ -56,43 +51,39 @@
         </div>
 
         <div id="filter-menu">
-            <label class="block text-xs font-bold mb-1 opacity-60">VISÃO</label>
+            <label class="block text-xs font-bold mb-1 opacity-50 uppercase">Visão</label>
             <select id="ano-select" onchange="carregarDados()" class="w-full st-select mb-4">
                 <option value="2026">2026</option>
                 <option value="2025">2025</option>
             </select>
-            <label class="block text-xs font-bold mb-1 opacity-60">MESES</label>
+            <label class="block text-xs font-bold mb-1 opacity-50 uppercase">Meses</label>
             <div id="meses-container" class="space-y-1 max-h-48 overflow-y-auto"></div>
         </div>
 
-        <div class="kpi-row">
+        <div class="kpi-row px-4">
             <div><div class="kpi-label">Faturamento</div><div id="kpi-faturamento" class="kpi-value text-[#22c55e]">R$ 0,00</div></div>
             <div><div class="kpi-label">Despesas</div><div id="kpi-despesas" class="kpi-value text-[#ff4b4b]">R$ 0,00</div></div>
             <div><div class="kpi-label">Resultado</div><div id="kpi-resultado" class="kpi-value text-[#3b82f6]">R$ 0,00</div></div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="st-block"><div class="block-title">Receitas</div><div id="chart-receitas" class="h-80"></div></div>
-            <div class="st-block"><div class="block-title">Despesas</div><div id="chart-despesas" class="h-80"></div></div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 px-4">
+            <div class="st-block"><div class="block-title">Receitas</div><div id="chart-receitas" class="h-[450px]"></div></div>
+            <div class="st-block"><div class="block-title">Despesas</div><div id="chart-despesas" class="h-[450px]"></div></div>
         </div>
 
-        <hr>
+        <div class="px-4"><hr class="border-white/10 my-6"></div>
 
-        <div class="st-block">
+        <div class="st-block mx-4">
             <div class="block-title">Tendência Mensal — <span id="ano-titulo"></span></div>
             <div id="chart-tendencia" class="h-96"></div>
         </div>
 
-        <hr>
-
-        <div class="st-block">
+        <div class="st-block mx-4">
             <div class="block-title">Top Despesas</div>
             <div id="chart-top" class="h-[550px]"></div>
         </div>
 
-        <hr>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4 mb-10">
             <div class="st-block">
                 <div class="block-title">📄 Detalhe Receitas</div>
                 <div class="max-h-[400px] overflow-y-auto">
@@ -100,14 +91,14 @@
                 </div>
             </div>
             <div class="st-block">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                <div class="flex justify-between items-center mb-3">
                     <div class="block-title !mb-0">📄 Detalhe Despesas</div>
-                    <select id="modo-tabela-despesa" onchange="renderUI()" class="st-select w-full sm:w-44">
+                    <select id="modo-tabela-despesa" onchange="renderUI()" class="st-select w-40">
                         <option value="setor">Resumo por setor</option>
                         <option value="categoria">Categorias de um setor</option>
                     </select>
                 </div>
-                <div id="filtros-categoria" class="hidden grid grid-cols-2 gap-2 mb-4">
+                <div id="filtros-categoria" class="hidden grid grid-cols-2 gap-2 mb-3">
                     <select id="select-setor-filtro" onchange="renderUI()" class="st-select"></select>
                     <input type="text" id="busca-categoria" onkeyup="renderUI()" placeholder="Buscar..." class="st-input">
                 </div>
@@ -119,26 +110,15 @@
                 </div>
             </div>
         </div>
-
-        <div id="last-update" class="text-center text-[10px] opacity-30 py-10"></div>
     </div>
 
     <script>
         let rawData = null;
         const MESES_ORDEM = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-        const CORES_ST = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3'];
+        const CORES_ST = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880'];
 
-        // Configuração Global de Localização Plotly para Português/Brasil
-        const configBR = { 
-            separators: ',.', 
-            decimal: ',', 
-            thousands: '.' 
-        };
-
-        function toggleFilters() { const m = document.getElementById('filter-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block'; }
-        
-        // Formatação Brasileira Manual para Elementos HTML
         const fmtBR = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        function toggleFilters() { const m = document.getElementById('filter-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block'; }
 
         async function carregarDados() {
             const ano = document.getElementById('ano-select').value;
@@ -148,7 +128,7 @@
                 const container = document.getElementById('meses-container');
                 if(container.innerHTML === "") {
                     container.innerHTML = rawData.meses_disponiveis.sort((a,b) => MESES_ORDEM.indexOf(a) - MESES_ORDEM.indexOf(b))
-                        .map(m => `<label class="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-1 rounded"><input type="checkbox" value="${m}" checked onchange="renderUI()"> ${m}</label>`).join('');
+                        .map(m => `<label class="flex items-center gap-2 cursor-pointer py-1 hover:bg-white/5 rounded px-2"><input type="checkbox" value="${m}" checked onchange="renderUI()"> ${m}</label>`).join('');
                 }
                 const setores = [...new Set(rawData.raw_despesas_res.map(d => d.Setor))].sort();
                 document.getElementById('select-setor-filtro').innerHTML = setores.map(s => `<option value="${s}">${s}</option>`).join('');
@@ -167,58 +147,69 @@
 
             document.getElementById('kpi-faturamento').innerText = "R$ " + fmtBR(r.reduce((a,b) => a+b.Valor, 0));
             document.getElementById('kpi-despesas').innerText = "R$ " + fmtBR(dr.reduce((a,b) => a+b.Valor, 0));
-            const resVal = r.reduce((a,b) => a+b.Valor, 0) - dr.reduce((a,b) => a+b.Valor, 0);
-            document.getElementById('kpi-resultado').innerText = "R$ " + fmtBR(resVal);
-            document.getElementById('last-update').innerText = "Última atualização: " + rawData.ultima_atualizacao;
+            document.getElementById('kpi-resultado').innerText = "R$ " + fmtBR(r.reduce((a,b) => a+b.Valor, 0) - dr.reduce((a,b) => a+b.Valor, 0));
 
             renderCharts(r, dr, dd, mesesSel);
             renderTables(r, dr, dd);
         }
 
         function renderCharts(r, dr, dd, meses) {
-            const layoutBase = {
+            // Layout otimizado para gráficos maiores (Igual ao Streamlit)
+            const layoutPizza = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#fafafa', family: 'Source Sans Pro', size: 14 },
+                margin: { t: 30, b: 30, l: 30, r: 150 }, // Margem direita maior para acomodar a legenda sem apertar o gráfico
+                showlegend: true,
+                legend: { x: 1, y: 0.5, font: { size: 12 } },
+                separators: ',.'
+            };
+
+            // Gráfico de Receitas
+            const rAgg = aggregate(r, 'Receita');
+            Plotly.newPlot('chart-receitas', [{ 
+                values: Object.values(rAgg), 
+                labels: Object.keys(rAgg), 
+                type: 'pie', 
+                hole: 0.55, 
+                marker: {colors: CORES_ST},
+                textinfo: 'percent',
+                insidetextorientation: 'radial'
+            }], layoutPizza);
+
+            // Gráfico de Despesas
+            const drAgg = aggregate(dr, 'Setor');
+            Plotly.newPlot('chart-despesas', [{ 
+                values: Object.values(drAgg), 
+                labels: Object.keys(drAgg), 
+                type: 'pie', 
+                hole: 0.55, 
+                marker: {colors: CORES_ST},
+                textinfo: 'percent',
+                insidetextorientation: 'radial'
+            }], layoutPizza);
+
+            // Tendência e Top Despesas mantendo a escala brasileira
+            const commonLayout = {
                 paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
                 font: { color: '#fafafa', family: 'Source Sans Pro', size: 13 },
                 margin: { t:20, b:40, l:60, r:20 },
-                separators: ',.' // Crucial para o padrão brasileiro no Plotly
+                separators: ',.'
             };
 
-            // Rosca
-            Plotly.newPlot('chart-receitas', [{ 
-                values: Object.values(aggregate(r, 'Receita')), labels: Object.keys(aggregate(r, 'Receita')), 
-                type: 'pie', hole: 0.6, marker: {colors: CORES_ST}, textinfo: 'percent' 
-            }], { ...layoutBase, showlegend: true, legend: {orientation: 'h', y: -0.2} });
-
-            Plotly.newPlot('chart-despesas', [{ 
-                values: Object.values(aggregate(dr, 'Setor')), labels: Object.keys(aggregate(dr, 'Setor')), 
-                type: 'pie', hole: 0.6, marker: {colors: CORES_ST}, textinfo: 'percent' 
-            }], { ...layoutBase, showlegend: true, legend: {orientation: 'h', y: -0.2} });
-
-            // Tendência (Imagem 3 - Correção de Escala e Formato)
             const tFat = meses.map(m => r.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
             const tDes = meses.map(m => dr.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
-            
             Plotly.newPlot('chart-tendencia', [
                 { x: meses, y: tFat, name: 'Faturamento', line: {color: '#22c55e', width: 4}, mode: 'lines+markers' },
                 { x: meses, y: tDes, name: 'Despesas', line: {color: '#ff4b4b', width: 4}, mode: 'lines+markers' },
                 { x: meses, y: tFat.map((v,i) => v - tDes[i]), name: 'Resultado', line: {color: '#3b82f6', width: 4}, mode: 'lines+markers' }
-            ], { 
-                ...layoutBase, 
-                yaxis: { tickformat: ',.2f', title: 'Valor (R$)' }, // Formato brasileiro nos eixos
-                hovermode: 'x unified'
-            });
+            ], { ...commonLayout, yaxis: { tickformat: ',.2f' }, hovermode: 'x unified' });
 
-            // Top Despesas (Imagem 4 - Sem cortes e com centavos)
             const top = Object.entries(aggregate(dd, 'Categoria')).sort((a,b) => b[1]-a[1]).slice(0, 10).reverse();
             Plotly.newPlot('chart-top', [{ 
-                x: top.map(x => x[1]), y: top.map(x => x[0]), 
-                type: 'bar', orientation: 'h', marker: {color: '#79B3E1'},
+                x: top.map(x => x[1]), y: top.map(x => x[0]), type: 'bar', orientation: 'h', marker: {color: '#79B3E1'},
                 text: top.map(x => "R$ " + fmtBR(x[1])), textposition: 'outside', cliponaxis: false
-            }], { 
-                ...layoutBase, 
-                margin: { l: 220, r: 120 }, // Aumentado para não cortar valores à direita
-                xaxis: { visible: false } 
-            });
+            }], { ...commonLayout, margin: { l: 220, r: 120 }, xaxis: { visible: false } });
         }
 
         function renderTables(r, dr, dd) {
@@ -229,26 +220,25 @@
             const modo = document.getElementById('modo-tabela-despesa').value;
             const headD = document.getElementById('tab-despesas-head');
             const bodyD = document.getElementById('tab-despesas-body');
-            const filtroArea = document.getElementById('filtros-categoria');
+            const filArea = document.getElementById('filtros-categoria');
 
             if(modo === 'setor') {
-                filtroArea.classList.add('hidden');
+                filArea.classList.add('hidden');
                 headD.innerHTML = `<tr><th>Setor</th><th class="val-col">Valor</th></tr>`;
                 const drAgg = Object.entries(aggregate(dr, 'Setor')).sort((a,b) => a[0].localeCompare(b[0]));
                 bodyD.innerHTML = drAgg.map(([k,v]) => `<tr><td>${k}</td><td class="val-col">R$ ${fmtBR(v)}</td></tr>`).join('');
             } else {
-                filtroArea.classList.remove('hidden');
+                filArea.classList.remove('hidden');
                 headD.innerHTML = `<tr><th>Categoria</th><th class="val-col">Valor</th></tr>`;
-                const setorSel = document.getElementById('select-setor-filtro').value;
+                const setor = document.getElementById('select-setor-filtro').value;
                 const busca = document.getElementById('busca-categoria').value.toLowerCase();
-                const filtered = dd.filter(d => d.Setor === setorSel && d.Categoria.toLowerCase().includes(busca));
+                const filtered = dd.filter(d => d.Setor === setor && d.Categoria.toLowerCase().includes(busca));
                 const agg = Object.entries(aggregate(filtered, 'Categoria')).sort((a,b) => a[0].localeCompare(b[0]));
                 bodyD.innerHTML = agg.map(([k,v]) => `<tr><td>${k}</td><td class="val-col">R$ ${fmtBR(v)}</td></tr>`).join('');
             }
         }
 
         function aggregate(arr, key) { return arr.reduce((acc, obj) => { acc[obj[key]] = (acc[obj[key]] || 0) + obj.Valor; return acc; }, {}); }
-
         window.onload = carregarDados;
     </script>
 </body>
