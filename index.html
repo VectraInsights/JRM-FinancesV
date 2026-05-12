@@ -341,16 +341,47 @@
         }
 
         function renderTopBarras(dd) {
-            const top = Object.entries(aggregate(dd, 'Categoria')).sort((a,b) => b[1]-a[1]).slice(0, 12).reverse();
-            Plotly.newPlot('chart-top', [{
-                x: top.map(x => x[1]), y: top.map(x => x[0]), type: 'bar', orientation: 'h',
-                marker: {color: '#3b82f6'}, text: top.map(x => "R$ " + fmtBR(x[1])), textposition: 'outside'
-            }], { paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: {color: '#fff'}, margin: {l:250, r:100, t:20, b:20}, xaxis: {visible: false} }, {displayModeBar: false});
+            const top = Object.entries(aggregate(dd, 'Categoria'))
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 12)
+                .reverse();
+
+            const values = top.map(x => x[1]);
+            const labels = top.map(x => x[0]);
+            const formattedTexts = top.map(x => "R$ " + fmtBR(x[1]));
+
+            const trace = {
+                x: values,
+                y: labels,
+                type: 'bar',
+                orientation: 'h',
+                marker: { color: '#3b82f6' },
+                text: formattedTexts,
+                textposition: 'outside',
+                hovertemplate: '%{text}<extra></extra>', 
+                cliponaxis: false // Impede que o texto seja cortado pela área do gráfico
+            };
+
+            const layout = {
+                paper_bgcolor: 'transparent',
+                plot_bgcolor: 'transparent',
+                font: { color: '#fff', family: 'Source Sans Pro' },
+                margin: { l: 250, r: 150, t: 20, b: 20 }, 
+                xaxis: {
+                    visible: false,
+                    range: [0, Math.max(...values) * 1.2] 
+                },
+                yaxis: {
+                    automargin: true
+                },
+                hoverlabel: {
+                    bgcolor: '#262730',
+                    font: { color: '#fff' }
+                }
+            };
+
+            Plotly.newPlot('chart-top', [trace], layout, { displayModeBar: false });
         }
-
-        function aggregate(arr, key) { return arr.reduce((acc, obj) => { acc[obj[key]] = (acc[obj[key]] || 0) + obj.Valor; return acc; }, {}); }
-
-        window.onload = carregarDados;
     </script>
 </body>
 </html>
