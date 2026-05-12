@@ -141,7 +141,3 @@ async def get_financial_data(ano: str = "2026", meses: Optional[List[str]] = Que
         }
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
-
-@app.get("/")
-async def health_check():
-    return {"message": "JRM Financial API is running", "version": "1.0.0"}
