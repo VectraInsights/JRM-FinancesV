@@ -272,16 +272,67 @@
         }
         
         function renderTendencia(r, dr, meses) {
-            const f = meses.map(m => r.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
-            const d = meses.map(m => dr.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
-            Plotly.newPlot('chart-tendencia', [
-                { x: meses, y: f, name: 'Faturamento', line: {color: '#22c55e', width: 3}, mode: 'lines+markers' },
-                { x: meses, y: d, name: 'Despesas', line: {color: '#ff4b4b', width: 3}, mode: 'lines+markers' }
-            ], { 
-                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', 
-                font: {color: '#fff'}, margin: {t:20, b:40, l:60, r:10}, 
-                legend: { orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center' } 
-            }, {displayModeBar: false});
+            // Cálculo das séries
+            const f = meses.map(m => r.filter(x => x.Mes === m).reduce((a, b) => a + b.Valor, 0));
+            const d = meses.map(m => dr.filter(x => x.Mes === m).reduce((a, b) => a + b.Valor, 0));
+            const res = f.map((v, i) => v - d[i]); // Linha de Resultado
+
+            const traces = [
+                {
+                    x: meses,
+                    y: f,
+                    name: 'Faturamento',
+                    mode: 'lines+markers',
+                    line: { color: '#22c55e', width: 3 },
+                    marker: { size: 8 }
+                },
+                {
+                    x: meses,
+                    y: d,
+                    name: 'Despesas',
+                    mode: 'lines+markers',
+                    line: { color: '#ff4b4b', width: 3 },
+                    marker: { size: 8 }
+                },
+                {
+                    x: meses,
+                    y: res,
+                    name: 'Resultado',
+                    mode: 'lines+markers',
+                    line: { color: '#3b82f6', width: 3 },
+                    marker: { size: 8 }
+                }
+            ];
+
+            const layout = {
+                paper_bgcolor: 'transparent',
+                plot_bgcolor: 'transparent',
+                font: { color: '#fff', family: 'Source Sans Pro' },
+                margin: { t: 40, b: 40, l: 80, r: 150 },
+                hovermode: 'x unified',
+                xaxis: {
+                    showgrid: true,
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    linecolor: 'rgba(255,255,255,0.2)'
+                },
+                yaxis: {
+                    title: 'Valor',
+                    showgrid: true,
+                    gridcolor: 'rgba(255,255,255,0.1)',
+                    tickformat: '.2s', // Formata como 2M, 4M etc.
+                    linecolor: 'rgba(255,255,255,0.2)'
+                },
+                legend: {
+                    x: 1.05,
+                    y: 1,
+                    xanchor: 'left',
+                    yanchor: 'top',
+                    font: { size: 12 }
+                },
+                showlegend: true
+            };
+
+            Plotly.newPlot('chart-tendencia', traces, layout, { displayModeBar: true });
         }
 
         function renderTopBarras(dd) {
