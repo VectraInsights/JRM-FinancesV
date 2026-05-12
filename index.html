@@ -77,7 +77,7 @@
         <div id="main-charts-container" class="grid grid-cols-1 lg:grid-cols-2 gap-4 px-4">
             </div>
 
-        <div class="st-block mx-4 mt-4">
+        <div id="detalhe-despesas-container" class="st-block mx-4 mt-4">
             <div class="block-title">Top Despesas Detalhadas</div>
             <div id="chart-top" class="h-[500px]"></div>
         </div>
@@ -102,11 +102,11 @@
         function atualizarInterfacePorAno() {
             if(!rawData) return;
             const visao = document.getElementById('ano-select').value;
-            // No modo comparativo, usamos meses de 2026 como base de filtro
-            const mesesAtivos = (visao === "2025") ? rawData.meses_disponiveis_2025 : rawData.meses_disponiveis_2026;
+            // Seleciona meses que têm dados no ano específico ou união no comparativo
+            const ativos = (visao === "2025") ? rawData.meses_disponiveis_2025 : rawData.meses_disponiveis_2026;
             
             document.getElementById('meses-container').innerHTML = MESES_ORDEM
-                .filter(m => mesesAtivos.includes(m))
+                .filter(m => ativos.includes(m))
                 .map(m => `<label class="flex items-center gap-2 cursor-pointer py-1 hover:bg-white/5 rounded px-2"><input type="checkbox" value="${m}" checked onchange="renderUI()"> ${m}</label>`)
                 .join('');
             
@@ -119,9 +119,16 @@
             const mesesSel = Array.from(document.querySelectorAll('#meses-container input:checked')).map(i => i.value);
             document.getElementById('display-periodo').innerHTML = `Período: ${mesesSel.join(', ')}`;
 
+            const container = document.getElementById('main-charts-container');
+            const detContainer = document.getElementById('detalhe-despesas-container');
+
             if (visao === 'comparativo') {
+                detContainer.style.display = 'none'; // Some no comparativo
+                container.className = "grid grid-cols-1 lg:grid-cols-3 gap-4 px-4";
                 renderModoComparativo(mesesSel);
             } else {
+                detContainer.style.display = 'block'; // Aparece no individual
+                container.className = "grid grid-cols-1 lg:grid-cols-2 gap-4 px-4";
                 renderModoIndividual(visao, mesesSel);
             }
         }
@@ -135,19 +142,17 @@
             const totalR = r.reduce((a,b) => a+b.Valor, 0);
             const totalD = dr.reduce((a,b) => a+b.Valor, 0);
 
-            // KPIs Limpos
             atualizarKPI("fat", totalR, null, null);
             atualizarKPI("des", totalD, null, null);
             atualizarKPI("res", totalR - totalD, null, null);
 
-            // Gráficos de Rosca
             document.getElementById('main-charts-container').innerHTML = `
                 <div class="st-block"><div class="block-title">Receitas</div><div id="chart-1" class="h-[400px]"></div></div>
                 <div class="st-block"><div class="block-title">Despesas</div><div id="chart-2" class="h-[400px]"></div></div>
             `;
 
-            renderPie('chart-1', aggregate(r, 'Receita'), 'Receitas');
-            renderPie('chart-2', aggregate(dr, 'Setor'), 'Despesas');
+            renderPie('chart-1', aggregate(r, 'Receita'));
+            renderPie('chart-2', aggregate(dr, 'Setor'));
             renderTopBarras(dd);
         }
 
@@ -155,42 +160,43 @@
             const d26 = rawData.ano_2026;
             const d25 = rawData.ano_2025;
 
-            const calc = (data) => {
-                const r = data.receitas.filter(d => meses.includes(d.Mes)).reduce((a,b) => a+b.Valor, 0);
-                const d = data.despesas_res.filter(d => meses.includes(d.Mes)).reduce((a,b) => a+b.Valor, 0);
-                return { r, d, res: r - d };
-            };
+            const somar = (lista) => lista.filter(d => meses.includes(d.Mes)).reduce((a,b) => a+b.Valor, 0);
 
-            const tot26 = calc(d26);
-            const tot25 = calc(d25);
+            const tot26 = { r: somar(d26.receitas), d: somar(d26.despesas_res) };
+            const tot25 = { r: somar(d25.receitas), d: somar(d25.despesas_res) };
 
             atualizarKPI("fat", tot26.r, tot25.r, "2025");
             atualizarKPI("des", tot26.d, tot25.d, "2025");
-            atualizarKPI("res", tot26.res, tot25.res, "2025");
+            atualizarKPI("res", tot26.r - tot26.d, tot25.r - tot25.d, "2025");
 
             document.getElementById('main-charts-container').innerHTML = `
-                <div class="st-block lg:col-span-2"><div class="block-title">Comparativo Mensal (2025 vs 2026)</div><div id="chart-comp" class="h-[450px]"></div></div>
+                <div class="st-block"><h3>Faturamento</h3><div id="c-fat" class="h-80"></div></div>
+                <div class="st-block"><h3>Despesas</h3><div id="c-des" class="h-80"></div></div>
+                <div class="st-block"><h3>Resultado</h3><div id="c-res" class="h-80"></div></div>
             `;
 
-            const series25 = meses.map(m => d25.receitas.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
-            const series26 = meses.map(m => d26.receitas.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
+            const getSeries = (dados, meses) => meses.map(m => dados.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
 
-            Plotly.newPlot('chart-comp', [
-                { x: meses, y: series25, name: '2025', type: 'bar', marker: {color: '#636efa'} },
-                { x: meses, y: series26, name: '2026', type: 'bar', marker: {color: '#00cc96'} }
-            ], { 
-                barmode: 'group', paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', 
-                font: {color: '#fff'}, margin: {t:30}, legend: {orientation: 'h', y: 1.1}
-            }, {displayModeBar: false});
+            const plotComp = (id, s25, s26, label) => {
+                Plotly.newPlot(id, [
+                    { x: meses, y: s25, name: '2025', type: 'bar', marker: {color: '#636efa'} },
+                    { x: meses, y: s26, name: '2026', type: 'bar', marker: {color: '#00cc96'} }
+                ], { barmode: 'group', paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: {color: '#fff'}, margin: {t:20, b:40, l:40, r:10}, showlegend: false }, {displayModeBar: false});
+            };
 
-            renderTopBarras(d26.despesas_det.filter(d => meses.includes(d.Mes)));
+            plotComp('c-fat', getSeries(d25.receitas, meses), getSeries(d26.receitas, meses));
+            plotComp('c-des', getSeries(d25.despesas_res, meses), getSeries(d26.despesas_res, meses));
+            
+            const res25 = meses.map(m => d25.receitas.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0) - d25.despesas_res.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
+            const res26 = meses.map(m => d26.receitas.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0) - d26.despesas_res.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
+            plotComp('c-res', res25, res26);
         }
 
-        function atualizarKPI(id, v26, v25, labelSub) {
-            document.getElementById(`val-${id}-principal`).innerText = "R$ " + fmtBR(v26);
-            if (v25 !== null) {
-                document.getElementById(`val-${id}-sub`).innerText = `R$ ${fmtBR(v25)} (${labelSub})`;
-                const dif = ((v26 / v25) - 1) * 100;
+        function atualizarKPI(id, vPrincipal, vSub, labelSub) {
+            document.getElementById(`val-${id}-principal`).innerText = "R$ " + fmtBR(vPrincipal);
+            if (vSub !== null) {
+                document.getElementById(`val-${id}-sub`).innerText = `R$ ${fmtBR(vSub)} (${labelSub})`;
+                const dif = ((vPrincipal / vSub) - 1) * 100;
                 const el = document.getElementById(`delta-${id}`);
                 el.innerText = (dif >= 0 ? "+" : "") + dif.toFixed(1) + "%";
                 el.style.color = (id === 'des' ? dif < 0 : dif > 0) ? "#22c55e" : "#ff4b4b";
@@ -200,14 +206,11 @@
             }
         }
 
-        function renderPie(div, data, title) {
+        function renderPie(div, data) {
             Plotly.newPlot(div, [{
                 values: Object.values(data), labels: Object.keys(data), type: 'pie', hole: 0.6,
                 textinfo: 'percent', hovertemplate: '%{label}<br>R$ %{value:,.2f}<extra></extra>'
-            }], { 
-                showlegend: true, paper_bgcolor: 'transparent', font: {color: '#fff'}, 
-                margin: {l:20, r:20, t:20, b:20}, legend: {orientation: 'h'} 
-            }, {displayModeBar: false});
+            }], { showlegend: false, paper_bgcolor: 'transparent', font: {color: '#fff'}, margin: {l:10, r:10, t:10, b:10} }, {displayModeBar: false});
         }
 
         function renderTopBarras(dd) {
@@ -215,10 +218,7 @@
             Plotly.newPlot('chart-top', [{
                 x: top.map(x => x[1]), y: top.map(x => x[0]), type: 'bar', orientation: 'h',
                 marker: {color: '#3b82f6'}, text: top.map(x => "R$ " + fmtBR(x[1])), textposition: 'outside'
-            }], { 
-                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: {color: '#fff'},
-                margin: {l:250, r:100, t:20, b:20}, xaxis: {visible: false}
-            }, {displayModeBar: false});
+            }], { paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: {color: '#fff'}, margin: {l:250, r:100, t:20, b:20}, xaxis: {visible: false} }, {displayModeBar: false});
         }
 
         function aggregate(arr, key) { return arr.reduce((acc, obj) => { acc[obj[key]] = (acc[obj[key]] || 0) + obj.Valor; return acc; }, {}); }
