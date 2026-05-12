@@ -1,7 +1,6 @@
 fastapi
 uvicorn
 pandas
-plotly
 requests
 openpyxl
 python-multipart
