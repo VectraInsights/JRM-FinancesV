@@ -8,96 +8,73 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --st-bg: #0e1117;
-            --st-secondary-bg: #1a1c24;
-            --st-text: #fafafa;
-            --st-border: rgba(250, 250, 250, 0.1);
-        }
-        body { background-color: var(--st-bg); color: var(--st-text); font-family: 'Source Sans Pro', sans-serif; margin: 0; padding: 2rem; }
+        :root { --st-bg: #0e1117; --st-text: #fafafa; --st-border: rgba(250, 250, 250, 0.1); }
+        body { background-color: var(--st-bg); color: var(--st-text); font-family: 'Source Sans Pro', sans-serif; padding: 2rem; }
         
-        /* Cabeçalho igual ao Streamlit */
-        .header-container { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
-        .brand-title { font-size: 1.5rem; font-weight: 700; }
-        .brand-subtitle { color: rgba(250, 250, 250, 0.6); font-size: 0.9rem; }
-        .brand-periodo { font-size: 0.85rem; margin-top: 0.5rem; }
+        /* Cabeçalho */
+        .brand-title { font-size: 1.8rem; font-weight: 700; }
+        .brand-subtitle { color: rgba(250, 250, 250, 0.6); font-size: 1rem; }
+        .brand-periodo { font-size: 1rem; margin-top: 0.5rem; font-weight: 600; }
 
-        /* Botões de Ação no Canto Superior Direito */
-        .st-action-buttons { display: flex; gap: 0.5rem; }
-        .st-btn-icon { background: #262730; border: 1px solid var(--st-border); border-radius: 4px; padding: 6px; cursor: pointer; }
-        
-        /* Menu de Filtros (Popover) */
-        #filter-menu { display: none; position: absolute; right: 2rem; top: 5rem; background: #262730; border: 1px solid var(--st-border); border-radius: 8px; padding: 1.5rem; z-index: 100; width: 250px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        /* Ações */
+        .st-btn-icon { background: #262730; border: 1px solid var(--st-border); border-radius: 4px; padding: 8px; cursor: pointer; }
+        #filter-menu { display: none; position: absolute; right: 2rem; top: 5rem; background: #262730; border: 1px solid var(--st-border); border-radius: 8px; padding: 1.5rem; z-index: 100; width: 280px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
 
-        /* KPIs Estilo Streamlit */
-        .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 3rem; text-align: center; }
-        .kpi-label { font-size: 0.9rem; opacity: 0.7; margin-bottom: 0.5rem; }
-        .kpi-value { font-size: 1.8rem; font-weight: 700; }
+        /* KPIs Grandes para preencher a tela inicial */
+        .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin: 4rem 0; text-align: center; }
+        .kpi-label { font-size: 1.1rem; opacity: 0.8; margin-bottom: 0.8rem; }
+        .kpi-value { font-size: 2.8rem; font-weight: 700; letter-spacing: -1px; }
 
-        /* Blocos de Gráfico */
+        /* Blocos */
         .st-block { border: 1px solid var(--st-border); border-radius: 0.5rem; padding: 1.5rem; margin-bottom: 2rem; }
-        .block-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+        .block-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 1.5rem; }
 
-        hr { border: 0; border-top: 1px solid var(--st-border); margin: 2rem 0; }
+        /* Inputs de Tabela */
+        .st-select, .st-input { background: #262730; border: 1px solid var(--st-border); color: white; padding: 0.5rem; border-radius: 4px; font-size: 0.9rem; width: 100%; }
         
-        /* Tabela igual ao print */
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 1rem; }
-        th { text-align: left; padding: 10px; border-bottom: 2px solid var(--st-border); color: rgba(255,255,255,0.6); }
-        td { padding: 10px; border-bottom: 1px solid var(--st-border); }
-        .val-col { text-align: right; }
+        /* Tabela */
+        table { width: 100%; border-collapse: collapse; font-size: 1rem; }
+        th { text-align: left; padding: 12px; border-bottom: 2px solid var(--st-border); color: rgba(255,255,255,0.6); }
+        td { padding: 12px; border-bottom: 1px solid var(--st-border); }
+        .val-col { text-align: right; font-family: 'Source Code Pro', monospace; }
+        
+        hr { border-top: 1px solid var(--st-border); margin: 3rem 0; }
     </style>
 </head>
 <body>
 
     <div class="max-w-7xl mx-auto">
-        <div class="header-container">
+        <div class="flex justify-between items-start">
             <div>
                 <div class="brand-title">📊 JRM Financial Dashboard</div>
                 <div class="brand-subtitle">by Vectra Insights</div>
-                <div id="display-periodo" class="brand-periodo"><b>Período:</b> Carregando...</div>
+                <div id="display-periodo" class="brand-periodo">Período: Janeiro, Fevereiro, Março</div>
             </div>
-            
-            <div class="st-action-buttons">
-                <button class="st-btn-icon" onclick="toggleFilters()" title="Filtros">⚙️</button>
-                <button class="st-btn-icon" onclick="carregarDados()" title="Atualizar">🔄</button>
+            <div class="flex gap-2">
+                <button class="st-btn-icon" onclick="toggleFilters()">⚙️</button>
+                <button class="st-btn-icon" onclick="carregarDados()">🔄</button>
             </div>
         </div>
 
         <div id="filter-menu">
-            <label class="block text-xs font-bold mb-2 opacity-60 uppercase">Visão:</label>
-            <select id="ano-select" onchange="carregarDados()" class="w-full bg-[#0e1117] border border-white/10 p-2 rounded mb-4 text-sm">
+            <label class="block text-xs font-bold mb-2 opacity-60">VISÃO:</label>
+            <select id="ano-select" onchange="carregarDados()" class="st-select mb-4">
                 <option value="2026">2026</option>
                 <option value="2025">2025</option>
             </select>
-            
-            <label class="block text-xs font-bold mb-2 opacity-60 uppercase">Meses:</label>
-            <div id="meses-container" class="space-y-1 text-sm max-h-48 overflow-y-auto pr-2"></div>
+            <label class="block text-xs font-bold mb-2 opacity-60">MESES:</label>
+            <div id="meses-container" class="space-y-1 max-h-48 overflow-y-auto"></div>
         </div>
 
         <div class="kpi-row">
-            <div>
-                <div class="kpi-label">Faturamento</div>
-                <div id="kpi-faturamento" class="kpi-value text-[#22c55e]">R$ 0,00</div>
-            </div>
-            <div>
-                <div class="kpi-label">Despesas</div>
-                <div id="kpi-despesas" class="kpi-value text-[#ff4b4b]">R$ 0,00</div>
-            </div>
-            <div>
-                <div class="kpi-label">Resultado</div>
-                <div id="kpi-resultado" class="kpi-value text-[#3b82f6]">R$ 0,00</div>
-            </div>
+            <div><div class="kpi-label">Faturamento</div><div id="kpi-faturamento" class="kpi-value text-[#22c55e]">R$ 0,00</div></div>
+            <div><div class="kpi-label">Despesas</div><div id="kpi-despesas" class="kpi-value text-[#ff4b4b]">R$ 0,00</div></div>
+            <div><div class="kpi-label">Resultado</div><div id="kpi-resultado" class="kpi-value text-[#3b82f6]">R$ 0,00</div></div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="st-block">
-                <div class="block-title">Receitas</div>
-                <div id="chart-receitas" class="h-80"></div>
-            </div>
-            <div class="st-block">
-                <div class="block-title">Despesas</div>
-                <div id="chart-despesas" class="h-80"></div>
-            </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[500px]">
+            <div class="st-block"><div class="block-title">Receitas</div><div id="chart-receitas" class="h-full"></div></div>
+            <div class="st-block"><div class="block-title">Despesas</div><div id="chart-despesas" class="h-full"></div></div>
         </div>
 
         <hr>
@@ -111,111 +88,140 @@
 
         <div class="st-block">
             <div class="block-title">Top Despesas</div>
-            <div id="chart-top" class="h-[500px]"></div>
+            <div id="chart-top" class="h-[600px]"></div>
         </div>
+
+        <hr>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div class="st-block">
-                <div class="block-title">📋 Detalhe Receitas</div>
+                <div class="block-title">📄 Detalhe Receitas</div>
+                <p class="text-xs opacity-50 mb-4">Resumo consolidado por tipo de receita</p>
                 <table><thead><tr><th>Receita</th><th class="val-col">Valor</th></tr></thead><tbody id="tab-receitas-body"></tbody></table>
             </div>
+            
             <div class="st-block">
-                <div class="block-title">📋 Detalhe Despesas</div>
-                <table><thead><tr><th>Setor</th><th class="val-col">Valor</th></tr></thead><tbody id="tab-despesas-body"></tbody></table>
+                <div class="flex justify-between items-center mb-4">
+                    <div class="block-title !mb-0">📄 Detalhe Despesas</div>
+                    <select id="modo-tabela-despesa" onchange="renderUI()" class="st-select !w-40">
+                        <option value="setor">Resumo por setor</option>
+                        <option value="categoria">Categorias de um setor</option>
+                    </select>
+                </div>
+                
+                <div id="filtros-categoria" class="hidden grid grid-cols-2 gap-2 mb-4">
+                    <select id="select-setor-filtro" onchange="renderUI()" class="st-select"></select>
+                    <input type="text" id="busca-categoria" onkeyup="renderUI()" placeholder="🔍 Buscar categoria..." class="st-input">
+                </div>
+
+                <div class="max-h-[400px] overflow-y-auto">
+                    <table id="tab-despesas">
+                        <thead><tr id="tab-despesas-head"><th>Setor</th><th class="val-col">Valor</th></tr></thead>
+                        <tbody id="tab-despesas-body"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
+        
+        <div id="last-update" class="text-center text-[10px] opacity-30 my-10"></div>
     </div>
 
     <script>
         let rawData = null;
         const MESES_ORDEM = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        const CORES_ST = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880'];
 
-        function toggleFilters() {
-            const menu = document.getElementById('filter-menu');
-            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-        }
+        function toggleFilters() { const m = document.getElementById('filter-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block'; }
+        const fmt = v => "R$ " + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 
         async function carregarDados() {
             const ano = document.getElementById('ano-select').value;
-            try {
-                const res = await fetch(`/api/data?ano=${ano}`);
-                rawData = await res.json();
-                
-                if (rawData.status === 'success') {
-                    popularMeses();
-                    renderUI();
+            const res = await fetch(`/api/data?ano=${ano}`);
+            rawData = await res.json();
+            if(rawData.status === 'success') {
+                const container = document.getElementById('meses-container');
+                if(container.innerHTML === "") {
+                    container.innerHTML = rawData.meses_disponiveis.sort((a,b) => MESES_ORDEM.indexOf(a) - MESES_ORDEM.indexOf(b))
+                        .map(m => `<label class="flex items-center gap-2"><input type="checkbox" value="${m}" checked onchange="renderUI()"> ${m}</label>`).join('');
                 }
-            } catch (e) { console.error("Erro ao carregar:", e); }
-        }
-
-        function popularMeses() {
-            const container = document.getElementById('meses-container');
-            if (container.innerHTML !== "") return; // Não reseta se já tiver meses
-
-            container.innerHTML = rawData.meses_disponiveis
-                .sort((a,b) => MESES_ORDEM.indexOf(a) - MESES_ORDEM.indexOf(b))
-                .map(m => `<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" value="${m}" checked onchange="renderUI()"> ${m}</label>`)
-                .join('');
+                
+                // Popular select de setores (Imagem 8)
+                const setores = [...new Set(rawData.raw_despesas_res.map(d => d.Setor))].sort();
+                document.getElementById('select-setor-filtro').innerHTML = setores.map(s => `<option value="${s}">${s}</option>`).join('');
+                
+                renderUI();
+            }
         }
 
         function renderUI() {
-            const selecionados = Array.from(document.querySelectorAll('#meses-container input:checked')).map(i => i.value);
-            document.getElementById('display-periodo').innerHTML = `<b>Período:</b> ${selecionados.join(', ')}`;
-            document.getElementById('ano-titulo').innerText = document.getElementById('ano-select').value;
+            const mesesSel = Array.from(document.querySelectorAll('#meses-container input:checked')).map(i => i.value);
+            document.getElementById('display-periodo').innerHTML = `<b>Período:</b> ${mesesSel.join(', ')}`;
+            
+            const r = rawData.raw_receitas.filter(d => mesesSel.includes(d.Mes));
+            const dr = rawData.raw_despesas_res.filter(d => mesesSel.includes(d.Mes));
+            const dd = rawData.raw_despesas_det.filter(d => mesesSel.includes(d.Mes));
 
-            const r = rawData.raw_receitas.filter(d => selecionados.includes(d.Mes));
-            const dr = rawData.raw_despesas_res.filter(d => selecionados.includes(d.Mes));
-            const dd = rawData.raw_despesas_det.filter(d => selecionados.includes(d.Mes));
+            const fatTotal = r.reduce((a,b) => a+b.Valor, 0);
+            const desTotal = dr.reduce((a,b) => a+b.Valor, 0);
+            document.getElementById('kpi-faturamento').innerText = fmt(fatTotal);
+            document.getElementById('kpi-despesas').innerText = fmt(desTotal);
+            document.getElementById('kpi-resultado').innerText = fmt(fatTotal - desTotal);
 
-            const faturamento = r.reduce((a,b) => a + b.Valor, 0);
-            const despesas = dr.reduce((a,b) => a + b.Valor, 0);
-            const fmt = v => "R$ " + v.toLocaleString('pt-BR', {minimumFractionDigits:2});
-
-            document.getElementById('kpi-faturamento').innerText = fmt(faturamento);
-            document.getElementById('kpi-despesas').innerText = fmt(despesas);
-            document.getElementById('kpi-resultado').innerText = fmt(faturamento - despesas);
-
-            renderPlots(r, dr, dd, selecionados);
-            renderTables(r, dr);
+            renderCharts(r, dr, dd, mesesSel);
+            renderTables(r, dr, dd);
         }
 
-        function renderPlots(r, dr, dd, meses) {
-            const commonLayout = {
-                paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-                font: { color: '#fafafa', family: 'Source Sans Pro' },
-                margin: { t:10, b:40, l:40, r:10 },
-                showlegend: true, legend: { orientation: 'h', y: -0.2 }
-            };
+        function renderCharts(r, dr, dd, meses) {
+            const layout = { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: '#fafafa', family: 'Source Sans Pro' }, margin: { t:20, b:40, l:40, r:10 } };
 
-            // Receitas Pizza
+            // Pizza Receitas & Despesas
             const rAgg = aggregate(r, 'Receita');
-            Plotly.newPlot('chart-receitas', [{ values: Object.values(rAgg), labels: Object.keys(rAgg), type: 'pie', hole: 0.6 }], commonLayout);
-
-            // Despesas Pizza
+            Plotly.newPlot('chart-receitas', [{ values: Object.values(rAgg), labels: Object.keys(rAgg), type: 'pie', hole: 0.6, marker: {colors: CORES_ST} }], layout);
             const drAgg = aggregate(dr, 'Setor');
-            Plotly.newPlot('chart-despesas', [{ values: Object.values(drAgg), labels: Object.keys(drAgg), type: 'pie', hole: 0.6 }], commonLayout);
+            Plotly.newPlot('chart-despesas', [{ values: Object.values(drAgg), labels: Object.keys(drAgg), type: 'pie', hole: 0.6, marker: {colors: CORES_ST} }], layout);
 
-            // Tendência
+            // Tendência (IMAGEM 2) - Formatação customizada no hover e eixo
             const tFat = meses.map(m => r.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
             const tDes = meses.map(m => dr.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
             Plotly.newPlot('chart-tendencia', [
-                { x: meses, y: tFat, name: 'Faturamento', line: {color: '#22c55e', width: 3} },
-                { x: meses, y: tDes, name: 'Despesas', line: {color: '#ff4b4b', width: 3} },
-                { x: meses, y: tFat.map((v,i) => v - tDes[i]), name: 'Resultado', line: {color: '#3b82f6', width: 3} }
-            ], commonLayout);
+                { x: meses, y: tFat, name: 'Faturamento', line: {color: '#22c55e', width: 3}, hovertemplate: '%{y:,.2f}' },
+                { x: meses, y: tDes, name: 'Despesas', line: {color: '#ff4b4b', width: 3}, hovertemplate: '%{y:,.2f}' },
+                { x: meses, y: tFat.map((v,i) => v - tDes[i]), name: 'Resultado', line: {color: '#3b82f6', width: 3}, hovertemplate: '%{y:,.2f}' }
+            ], { ...layout, yaxis: { tickformat: '.2s', title: 'Valor' } });
 
-            // Top Despesas
-            const top = Object.entries(aggregate(dd, 'Categoria')).sort((a,b) => b[1]-a[1]).slice(0, 10);
-            Plotly.newPlot('chart-top', [{ x: top.map(x => x[1]), y: top.map(x => x[0]), type: 'bar', orientation: 'h', marker: {color: '#79B3E1'} }], {...commonLayout, margin: {l: 150}});
+            // Top Despesas (IMAGEM 4)
+            const top = Object.entries(aggregate(dd, 'Categoria')).sort((a,b) => b[1]-a[1]).slice(0, 10).reverse();
+            Plotly.newPlot('chart-top', [{ 
+                x: top.map(x => x[1]), y: top.map(x => x[0]), type: 'bar', orientation: 'h', 
+                marker: {color: '#79B3E1'}, text: top.map(x => fmt(x[1])), textposition: 'outside' 
+            }], { ...layout, margin: {l: 200}, xaxis: {showticklabels: false} });
         }
 
-        function renderTables(r, dr) {
-            const rAgg = aggregate(r, 'Receita');
-            const drAgg = aggregate(dr, 'Setor');
-            const fmt = v => "R$ " + v.toLocaleString('pt-BR', {minimumFractionDigits:2});
+        function renderTables(r, dr, dd) {
+            // Receitas sempre em Ordem Alfabética
+            const rAgg = Object.entries(aggregate(r, 'Receita')).sort((a,b) => a[0].localeCompare(b[0]));
+            document.getElementById('tab-receitas-body').innerHTML = rAgg.map(([k,v]) => `<tr><td>${k}</td><td class="val-col">${fmt(v)}</td></tr>`).join('');
 
-            document.getElementById('tab-receitas-body').innerHTML = Object.entries(rAgg).map(([k,v]) => `<tr><td>${k}</td><td class="val-col">${fmt(v)}</td></tr>`).join('');
-            document.getElementById('tab-despesas-body').innerHTML = Object.entries(drAgg).map(([k,v]) => `<tr><td>${k}</td><td class="val-col">${fmt(v)}</td></tr>`).join('');
+            const modo = document.getElementById('modo-tabela-despesa').value;
+            const filtroArea = document.getElementById('filtros-categoria');
+            const head = document.getElementById('tab-despesas-head');
+            const body = document.getElementById('tab-despesas-body');
+
+            if(modo === 'setor') {
+                filtroArea.classList.add('hidden');
+                head.innerHTML = `<th>Setor</th><th class="val-col">Valor</th>`;
+                const drAgg = Object.entries(aggregate(dr, 'Setor')).sort((a,b) => a[0].localeCompare(b[0]));
+                body.innerHTML = drAgg.map(([k,v]) => `<tr><td>${k}</td><td class="val-col">${fmt(v)}</td></tr>`).join('');
+            } else {
+                filtroArea.classList.remove('hidden');
+                head.innerHTML = `<th>Categoria</th><th class="val-col">Valor</th>`;
+                const setorSel = document.getElementById('select-setor-filtro').value;
+                const busca = document.getElementById('busca-categoria').value.toLowerCase();
+                
+                const filtered = dd.filter(d => d.Setor === setorSel && d.Categoria.toLowerCase().includes(busca));
+                const agg = Object.entries(aggregate(filtered, 'Categoria')).sort((a,b) => a[0].localeCompare(b[0]));
+                body.innerHTML = agg.map(([k,v]) => `<tr><td>${k}</td><td class="val-col">${fmt(v)}</td></tr>`).join('');
+            }
         }
 
         function aggregate(arr, key) {
