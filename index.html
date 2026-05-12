@@ -15,14 +15,16 @@
         #filter-menu { display: none; position: absolute; right: 1%; top: 4rem; background: #262730; border: 1px solid var(--st-border); border-radius: 8px; padding: 1.5rem; z-index: 100; width: 280px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0 2rem 0; text-align: center; }
         .kpi-label { font-size: 1rem; opacity: 0.8; margin-bottom: 0.2rem; }
-        .kpi-value { font-size: 2.2rem; font-weight: 700; line-height: 1.1; }
+        .kpi-value { font-size: 1.8rem; font-weight: 700; line-height: 1.1; }
+        .kpi-sub { font-size: 0.85rem; opacity: 0.6; margin-top: 4px; }
+        .delta { font-size: 0.9rem; font-weight: 600; margin-top: 2px; }
         .st-block { border: 1px solid var(--st-border); border-radius: 0.5rem; padding: 1.2rem; margin-bottom: 1rem; }
         .block-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; }
-        .st-select, .st-input { background: #0e1117; border: 1px solid var(--st-border); color: white; padding: 0.4rem; border-radius: 4px; font-size: 0.85rem; }
+        .st-select { background: #0e1117; border: 1px solid var(--st-border); color: white; padding: 0.4rem; border-radius: 4px; font-size: 0.85rem; }
         table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
         th { text-align: left; padding: 10px; border-bottom: 2px solid var(--st-border); color: rgba(255,255,255,0.6); }
         td { padding: 10px; border-bottom: 1px solid var(--st-border); }
-        .val-col { text-align: right; font-family: 'Source Code Pro', monospace; font-weight: 600; }
+        .val-col { text-align: right; font-family: 'monospace'; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -45,73 +47,45 @@
             <select id="ano-select" onchange="atualizarInterfacePorAno()" class="w-full st-select mb-4">
                 <option value="2026">2026</option>
                 <option value="2025">2025</option>
+                <option value="comparativo">Comparativo</option>
             </select>
             <label class="block text-xs font-bold mb-1 opacity-50 uppercase">Meses</label>
             <div id="meses-container" class="space-y-1 max-h-48 overflow-y-auto"></div>
         </div>
 
         <div class="kpi-row px-4">
-            <div><div class="kpi-label">Faturamento</div><div id="kpi-faturamento" class="kpi-value text-[#22c55e]">R$ 0,00</div></div>
-            <div><div class="kpi-label">Despesas</div><div id="kpi-despesas" class="kpi-value text-[#ff4b4b]">R$ 0,00</div></div>
-            <div><div class="kpi-label">Resultado</div><div id="kpi-resultado" class="kpi-value text-[#3b82f6]">R$ 0,00</div></div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 px-4">
-            <div class="st-block"><div class="block-title">Receitas</div><div id="chart-receitas" class="h-[450px]"></div></div>
-            <div class="st-block"><div class="block-title">Despesas</div><div id="chart-despesas" class="h-[450px]"></div></div>
-        </div>
-
-        <div class="st-block mx-4">
-            <div class="block-title">Tendência Mensal — <span id="ano-titulo"></span></div>
-            <div id="chart-tendencia" class="h-96"></div>
-        </div>
-
-        <div class="st-block mx-4">
-            <div class="block-title">Top Despesas</div>
-            <div id="chart-top" class="h-[550px]"></div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4 mb-10">
-            <div class="st-block">
-                <div class="block-title">📄 Detalhe Receitas</div>
-                <div class="max-h-[400px] overflow-y-auto">
-                    <table><thead><tr><th>Receita</th><th class="val-col">Valor</th></tr></thead><tbody id="tab-receitas-body"></tbody></table>
-                </div>
+            <div id="kpi-fat-box">
+                <div class="kpi-label">Faturamento</div>
+                <div id="val-fat-principal" class="kpi-value text-[#22c55e]">R$ 0,00</div>
+                <div id="val-fat-sub" class="kpi-sub"></div>
+                <div id="delta-fat" class="delta"></div>
             </div>
-            <div class="st-block">
-                <div class="flex justify-between items-center mb-3">
-                    <div class="block-title !mb-0">📄 Detalhe Despesas</div>
-                    <select id="modo-tabela-despesa" onchange="renderUI()" class="st-select w-40">
-                        <option value="setor">Resumo por setor</option>
-                        <option value="categoria">Categorias de um setor</option>
-                    </select>
-                </div>
-                <div id="filtros-categoria" class="hidden grid grid-cols-2 gap-2 mb-3">
-                    <select id="select-setor-filtro" onchange="renderUI()" class="st-select"></select>
-                    <input type="text" id="busca-categoria" onkeyup="renderUI()" placeholder="Buscar..." class="st-input">
-                </div>
-                <div class="max-h-[400px] overflow-y-auto">
-                    <table id="tab-despesas">
-                        <thead id="tab-despesas-head"></thead>
-                        <tbody id="tab-despesas-body"></tbody>
-                    </table>
-                </div>
+            <div id="kpi-des-box">
+                <div class="kpi-label">Despesas</div>
+                <div id="val-des-principal" class="kpi-value text-[#ff4b4b]">R$ 0,00</div>
+                <div id="val-des-sub" class="kpi-sub"></div>
+                <div id="delta-des" class="delta"></div>
             </div>
+            <div id="kpi-res-box">
+                <div class="kpi-label">Resultado</div>
+                <div id="val-res-principal" class="kpi-value text-[#3b82f6]">R$ 0,00</div>
+                <div id="val-res-sub" class="kpi-sub"></div>
+                <div id="delta-res" class="delta"></div>
+            </div>
+        </div>
+
+        <div id="main-charts-container" class="grid grid-cols-1 lg:grid-cols-2 gap-4 px-4">
+            </div>
+
+        <div class="st-block mx-4 mt-4">
+            <div class="block-title">Top Despesas Detalhadas</div>
+            <div id="chart-top" class="h-[500px]"></div>
         </div>
     </div>
 
     <script>
         let rawData = null;
         const MESES_ORDEM = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-
-        const MAPA_CORES = {
-            "Correios": "#636EFA", "Fretes internos": "#EF553B", "Fretes diversos": "#00CC96",
-            "Rendimento sobre aplicações": "#AB63FA", "Administrativas": "#636EFA",
-            "Abastecimento/Descargas": "#EF553B", "Financiamentos/Imobilizados": "#00CC96",
-            "Diversos": "#AB63FA", "Mecânica": "#FFA15A", "Borracharia": "#19D3F3",
-            "Elétrica": "#FF6692", "Despesas Baú, Lanternagem, Funilaria e Pintura": "#B6E880", "Acessórios": "#FF97FF"
-        };
-
         const fmtBR = v => (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         
         function toggleFilters() { 
@@ -122,130 +96,132 @@
         async function carregarDados() {
             const res = await fetch(`/api/data`);
             rawData = await res.json();
-            if(rawData.status === 'success') {
-                atualizarInterfacePorAno();
-            }
+            if(rawData.status === 'success') atualizarInterfacePorAno();
         }
 
         function atualizarInterfacePorAno() {
             if(!rawData) return;
-            const visão = document.getElementById('ano-select').value;
-            const mesesAtivos = visão === "2026" ? rawData.meses_disponiveis_2026 : rawData.meses_disponiveis_2025;
+            const visao = document.getElementById('ano-select').value;
+            // No modo comparativo, usamos meses de 2026 como base de filtro
+            const mesesAtivos = (visao === "2025") ? rawData.meses_disponiveis_2025 : rawData.meses_disponiveis_2026;
             
-            // Popula os meses e marca apenas os que têm dados (Lógica do Streamlit)
-            const container = document.getElementById('meses-container');
-            container.innerHTML = MESES_ORDEM
-                .filter(m => (visão === "2026" ? rawData.meses_disponiveis_2026 : rawData.meses_disponiveis_2025).includes(m))
+            document.getElementById('meses-container').innerHTML = MESES_ORDEM
+                .filter(m => mesesAtivos.includes(m))
                 .map(m => `<label class="flex items-center gap-2 cursor-pointer py-1 hover:bg-white/5 rounded px-2"><input type="checkbox" value="${m}" checked onchange="renderUI()"> ${m}</label>`)
                 .join('');
-
-            const dadosAno = visão === "2026" ? rawData.ano_2026 : rawData.ano_2025;
-            const setores = [...new Set(dadosAno.despesas_res.map(d => d.Setor))].sort();
-            document.getElementById('select-setor-filtro').innerHTML = setores.map(s => `<option value="${s}">${s}</option>`).join('');
             
             renderUI();
         }
 
         function renderUI() {
             if(!rawData) return;
-            const visão = document.getElementById('ano-select').value;
+            const visao = document.getElementById('ano-select').value;
             const mesesSel = Array.from(document.querySelectorAll('#meses-container input:checked')).map(i => i.value);
-            const dadosAno = visão === "2026" ? rawData.ano_2026 : rawData.ano_2025;
-
             document.getElementById('display-periodo').innerHTML = `Período: ${mesesSel.join(', ')}`;
-            document.getElementById('ano-titulo').innerText = visão;
 
-            const r = dadosAno.receitas.filter(d => mesesSel.includes(d.Mes));
-            const dr = dadosAno.despesas_res.filter(d => mesesSel.includes(d.Mes));
-            const dd = dadosAno.despesas_det.filter(d => mesesSel.includes(d.Mes));
-
-            const totalR = r.reduce((a,b) => a+b.Valor, 0);
-            const totalDR = dr.reduce((a,b) => a+b.Valor, 0);
-
-            document.getElementById('kpi-faturamento').innerText = "R$ " + fmtBR(totalR);
-            document.getElementById('kpi-despesas').innerText = "R$ " + fmtBR(totalDR);
-            document.getElementById('kpi-resultado').innerText = "R$ " + fmtBR(totalR - totalDR);
-
-            renderCharts(r, dr, dd, mesesSel);
-            renderTables(r, dr, dd);
-        }
-
-        function renderCharts(r, dr, dd, meses) {
-            const config = { displayModeBar: false };
-            const layoutBase = {
-                paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-                font: { color: '#fafafa', family: 'Source Sans Pro', size: 12 },
-                margin: { t: 30, b: 30, l: 30, r: 150 },
-                showlegend: true, legend: { x: 1, y: 0.5 },
-                separators: ',.',
-                hoverlabel: { bgcolor: '#262730', font: { color: '#fafafa' } }
-            };
-
-            // Receitas
-            const rAgg = aggregate(r, 'Receita');
-            Plotly.newPlot('chart-receitas', [{ 
-                values: Object.values(rAgg), labels: Object.keys(rAgg), 
-                type: 'pie', hole: 0.55, marker: { colors: Object.keys(rAgg).map(l => MAPA_CORES[l] || "#888") },
-                textinfo: 'percent'
-            }], layoutBase, config);
-
-            // Despesas
-            const drAgg = aggregate(dr, 'Setor');
-            Plotly.newPlot('chart-despesas', [{ 
-                values: Object.values(drAgg), labels: Object.keys(drAgg), 
-                type: 'pie', hole: 0.55, marker: { colors: Object.keys(drAgg).map(l => MAPA_CORES[l] || "#888") },
-                textinfo: 'percent'
-            }], layoutBase, config);
-
-            // Tendência
-            const tFat = meses.map(m => r.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
-            const tDes = meses.map(m => dr.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
-            Plotly.newPlot('chart-tendencia', [
-                { x: meses, y: tFat, name: 'Faturamento', line: {color: '#22c55e', width: 3}, mode: 'lines+markers' },
-                { x: meses, y: tDes, name: 'Despesas', line: {color: '#ff4b4b', width: 3}, mode: 'lines+markers' },
-                { x: meses, y: tFat.map((v,i) => v - tDes[i]), name: 'Resultado', line: {color: '#3b82f6', width: 3}, mode: 'lines+markers' }
-            ], { ...layoutBase, margin: { t: 20, b: 40, l: 80, r: 40 }, legend: { orientation: 'h', y: -0.2 } }, config);
-
-            // Top Despesas
-            const top = Object.entries(aggregate(dd, 'Categoria')).sort((a,b) => b[1]-a[1]).slice(0, 10).reverse();
-            Plotly.newPlot('chart-top', [{ 
-                x: top.map(x => x[1]), y: top.map(x => x[0]), type: 'bar', orientation: 'h', marker: {color: '#79B3E1'},
-                text: top.map(x => "R$ " + fmtBR(x[1])), textposition: 'outside'
-            }], { ...layoutBase, showlegend: false, margin: { l: 220, r: 120 }, xaxis: { visible: false } }, config);
-        }
-
-        function renderTables(r, dr, dd) {
-            const bodyR = document.getElementById('tab-receitas-body');
-            const rAgg = Object.entries(aggregate(r, 'Receita')).sort((a,b) => a[0].localeCompare(b[0]));
-            bodyR.innerHTML = rAgg.map(([k,v]) => `<tr><td>${k}</td><td class="val-col">R$ ${fmtBR(v)}</td></tr>`).join('');
-
-            const modo = document.getElementById('modo-tabela-despesa').value;
-            const headD = document.getElementById('tab-despesas-head');
-            const bodyD = document.getElementById('tab-despesas-body');
-            const filArea = document.getElementById('filtros-categoria');
-
-            if(modo === 'setor') {
-                filArea.classList.add('hidden');
-                headD.innerHTML = `<tr><th>Setor</th><th class="val-col">Valor</th></tr>`;
-                const drAgg = Object.entries(aggregate(dr, 'Setor')).sort((a,b) => a[0].localeCompare(b[0]));
-                bodyD.innerHTML = drAgg.map(([k,v]) => `<tr><td>${k}</td><td class="val-col">R$ ${fmtBR(v)}</td></tr>`).join('');
+            if (visao === 'comparativo') {
+                renderModoComparativo(mesesSel);
             } else {
-                filArea.classList.remove('hidden');
-                headD.innerHTML = `<tr><th>Categoria</th><th class="val-col">Valor</th></tr>`;
-                const setor = document.getElementById('select-setor-filtro').value;
-                const busca = document.getElementById('busca-categoria').value.toLowerCase();
-                const filtered = dd.filter(d => d.Setor === setor && d.Categoria.toLowerCase().includes(busca));
-                const agg = Object.entries(aggregate(filtered, 'Categoria')).sort((a,b) => a[0].localeCompare(b[0]));
-                bodyD.innerHTML = agg.map(([k,v]) => `<tr><td>${k}</td><td class="val-col">R$ ${fmtBR(v)}</td></tr>`).join('');
+                renderModoIndividual(visao, mesesSel);
             }
         }
 
-        function aggregate(arr, key) { 
-            return arr.reduce((acc, obj) => { 
-                acc[obj[key]] = (acc[obj[key]] || 0) + obj.Valor; 
-                return acc; 
-            }, {}); 
+        function renderModoIndividual(ano, meses) {
+            const dados = rawData[`ano_${ano}`];
+            const r = dados.receitas.filter(d => meses.includes(d.Mes));
+            const dr = dados.despesas_res.filter(d => meses.includes(d.Mes));
+            const dd = dados.despesas_det.filter(d => meses.includes(d.Mes));
+
+            const totalR = r.reduce((a,b) => a+b.Valor, 0);
+            const totalD = dr.reduce((a,b) => a+b.Valor, 0);
+
+            // KPIs Limpos
+            atualizarKPI("fat", totalR, null, null);
+            atualizarKPI("des", totalD, null, null);
+            atualizarKPI("res", totalR - totalD, null, null);
+
+            // Gráficos de Rosca
+            document.getElementById('main-charts-container').innerHTML = `
+                <div class="st-block"><div class="block-title">Receitas</div><div id="chart-1" class="h-[400px]"></div></div>
+                <div class="st-block"><div class="block-title">Despesas</div><div id="chart-2" class="h-[400px]"></div></div>
+            `;
+
+            renderPie('chart-1', aggregate(r, 'Receita'), 'Receitas');
+            renderPie('chart-2', aggregate(dr, 'Setor'), 'Despesas');
+            renderTopBarras(dd);
         }
+
+        function renderModoComparativo(meses) {
+            const d26 = rawData.ano_2026;
+            const d25 = rawData.ano_2025;
+
+            const calc = (data) => {
+                const r = data.receitas.filter(d => meses.includes(d.Mes)).reduce((a,b) => a+b.Valor, 0);
+                const d = data.despesas_res.filter(d => meses.includes(d.Mes)).reduce((a,b) => a+b.Valor, 0);
+                return { r, d, res: r - d };
+            };
+
+            const tot26 = calc(d26);
+            const tot25 = calc(d25);
+
+            atualizarKPI("fat", tot26.r, tot25.r, "2025");
+            atualizarKPI("des", tot26.d, tot25.d, "2025");
+            atualizarKPI("res", tot26.res, tot25.res, "2025");
+
+            document.getElementById('main-charts-container').innerHTML = `
+                <div class="st-block lg:col-span-2"><div class="block-title">Comparativo Mensal (2025 vs 2026)</div><div id="chart-comp" class="h-[450px]"></div></div>
+            `;
+
+            const series25 = meses.map(m => d25.receitas.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
+            const series26 = meses.map(m => d26.receitas.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
+
+            Plotly.newPlot('chart-comp', [
+                { x: meses, y: series25, name: '2025', type: 'bar', marker: {color: '#636efa'} },
+                { x: meses, y: series26, name: '2026', type: 'bar', marker: {color: '#00cc96'} }
+            ], { 
+                barmode: 'group', paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', 
+                font: {color: '#fff'}, margin: {t:30}, legend: {orientation: 'h', y: 1.1}
+            }, {displayModeBar: false});
+
+            renderTopBarras(d26.despesas_det.filter(d => meses.includes(d.Mes)));
+        }
+
+        function atualizarKPI(id, v26, v25, labelSub) {
+            document.getElementById(`val-${id}-principal`).innerText = "R$ " + fmtBR(v26);
+            if (v25 !== null) {
+                document.getElementById(`val-${id}-sub`).innerText = `R$ ${fmtBR(v25)} (${labelSub})`;
+                const dif = ((v26 / v25) - 1) * 100;
+                const el = document.getElementById(`delta-${id}`);
+                el.innerText = (dif >= 0 ? "+" : "") + dif.toFixed(1) + "%";
+                el.style.color = (id === 'des' ? dif < 0 : dif > 0) ? "#22c55e" : "#ff4b4b";
+            } else {
+                document.getElementById(`val-${id}-sub`).innerText = "";
+                document.getElementById(`delta-${id}`).innerText = "";
+            }
+        }
+
+        function renderPie(div, data, title) {
+            Plotly.newPlot(div, [{
+                values: Object.values(data), labels: Object.keys(data), type: 'pie', hole: 0.6,
+                textinfo: 'percent', hovertemplate: '%{label}<br>R$ %{value:,.2f}<extra></extra>'
+            }], { 
+                showlegend: true, paper_bgcolor: 'transparent', font: {color: '#fff'}, 
+                margin: {l:20, r:20, t:20, b:20}, legend: {orientation: 'h'} 
+            }, {displayModeBar: false});
+        }
+
+        function renderTopBarras(dd) {
+            const top = Object.entries(aggregate(dd, 'Categoria')).sort((a,b) => b[1]-a[1]).slice(0, 12).reverse();
+            Plotly.newPlot('chart-top', [{
+                x: top.map(x => x[1]), y: top.map(x => x[0]), type: 'bar', orientation: 'h',
+                marker: {color: '#3b82f6'}, text: top.map(x => "R$ " + fmtBR(x[1])), textposition: 'outside'
+            }], { 
+                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: {color: '#fff'},
+                margin: {l:250, r:100, t:20, b:20}, xaxis: {visible: false}
+            }, {displayModeBar: false});
+        }
+
+        function aggregate(arr, key) { return arr.reduce((acc, obj) => { acc[obj[key]] = (acc[obj[key]] || 0) + obj.Valor; return acc; }, {}); }
 
         window.onload = carregarDados;
     </script>
