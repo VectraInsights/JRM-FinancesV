@@ -104,39 +104,21 @@ def carregar_dados(sheet_id):
 # =========================================================
 
 @app.get("/api/data")
-async def get_financial_data(ano: str = "2026", meses: Optional[List[str]] = Query(None)):
+async def get_financial_data(ano: str = "2026"):
     try:
         sheet_id = SHEET_ID_2026 if ano == "2026" else SHEET_ID_2025
         df_r, df_dr, df_dd = carregar_dados(sheet_id)
 
-        if meses:
-            df_r = df_r[df_r["Mes"].isin(meses)]
-            df_dr = df_dr[df_dr["Mes"].isin(meses)]
-            df_dd = df_dd[df_dd["Mes"].isin(meses)]
-
-        # Consolidação para o Frontend
-        faturamento = float(df_r["Valor"].sum())
-        despesas = float(df_dr["Valor"].sum())
+        # Dados para os filtros do frontend
+        meses_disponiveis = df_r["Mes"].unique().tolist()
         
-        # Resumo por Setor (Garante a soma correta corrigida anteriormente)
-        resumo_setor = df_dr.groupby("Setor")["Valor"].sum().to_dict()
-        
-        # Top Despesas (Categorias)
-        top_despesas = df_dd.groupby("Categoria")["Valor"].sum().sort_values(ascending=False).head(10).to_dict()
-
+        # Enviamos os dados brutos para o frontend filtrar (conforme o Streamlit fazia)
         return {
             "status": "success",
-            "ano": ano,
-            "periodo": meses,
-            "kpis": {
-                "faturamento": faturamento,
-                "despesas": despesas,
-                "resultado": faturamento - despesas
-            },
-            "graficos": {
-                "setores": resumo_setor,
-                "top_categorias": top_despesas
-            },
+            "meses_disponiveis": meses_disponiveis,
+            "raw_receitas": df_r.to_dict(orient="records"),
+            "raw_despesas_res": df_dr.to_dict(orient="records"),
+            "raw_despesas_det": df_dd.to_dict(orient="records"),
             "ultima_atualizacao": datetime.now(TIMEZONE_BRASILIA).strftime("%d/%m/%Y %H:%M:%S")
         }
     except Exception as e:
