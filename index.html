@@ -221,7 +221,7 @@
                 x: top.map(x => x[1]), y: top.map(x => x[0]), type: 'bar', orientation: 'h', marker: {color: '#79B3E1'},
                 text: top.map(x => "R$ " + fmtBR(x[1])), textposition: 'outside', cliponaxis: false,
                 hovertemplate: '%{y}: R$ %{x:,.2f}<extra></extra>'
-            }], { ...layoutBase, margin: { l: 220, r: 120 }, xaxis: { visible: false } }, configEsconderBotoes);
+            }], { ...layoutBase, showlegend: false, margin: { l: 220, r: 120 }, xaxis: { visible: false } }, configEsconderBotoes);
         }
 
         function renderTables(r, dr, dd) {
