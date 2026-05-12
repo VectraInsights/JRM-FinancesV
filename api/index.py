@@ -104,21 +104,31 @@ def carregar_dados(sheet_id):
 # =========================================================
 
 @app.get("/api/data")
-async def get_financial_data(ano: str = "2026"):
+async def get_financial_data():
     try:
-        sheet_id = SHEET_ID_2026 if ano == "2026" else SHEET_ID_2025
-        df_r, df_dr, df_dd = carregar_dados(sheet_id)
+        # Carregamos ambos os anos para permitir a comparação instantânea sem novas requisições
+        r26, dr26, dd26 = carregar_dados(SHEET_ID_2026)
+        r25, dr25, dd25 = carregar_dados(SHEET_ID_2025)
 
-        # Dados para os filtros do frontend
-        meses_disponiveis = df_r["Mes"].unique().tolist()
+        # Identificamos quais meses realmente têm lançamentos (Valores > 0)
+        # Isso permite que o frontend marque apenas Jan, Fev e Mar em 2026 automaticamente
+        meses_ativos_26 = r26[r26["Valor"] > 0]["Mes"].unique().tolist()
+        meses_ativos_25 = r25[r25["Valor"] > 0]["Mes"].unique().tolist()
         
-        # Enviamos os dados brutos para o frontend filtrar (conforme o Streamlit fazia)
         return {
             "status": "success",
-            "meses_disponiveis": meses_disponiveis,
-            "raw_receitas": df_r.to_dict(orient="records"),
-            "raw_despesas_res": df_dr.to_dict(orient="records"),
-            "raw_despesas_det": df_dd.to_dict(orient="records"),
+            "meses_disponiveis_2026": meses_ativos_26,
+            "meses_disponiveis_2025": meses_ativos_25,
+            "ano_2026": {
+                "receitas": r26.to_dict(orient="records"),
+                "despesas_res": dr26.to_dict(orient="records"),
+                "despesas_det": dd26.to_dict(orient="records")
+            },
+            "ano_2025": {
+                "receitas": r25.to_dict(orient="records"),
+                "despesas_res": dr25.to_dict(orient="records"),
+                "despesas_det": dd25.to_dict(orient="records")
+            },
             "ultima_atualizacao": datetime.now(TIMEZONE_BRASILIA).strftime("%d/%m/%Y %H:%M:%S")
         }
     except Exception as e:
