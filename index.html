@@ -100,14 +100,16 @@
 
         <div id="detalhe-despesas-container" class="st-block mx-4 mt-4">
             <div class="block-title">Top Despesas Detalhadas</div>
-            <div id="chart-top" class="h-[500px]"></div>
+            <div id="chart-top" class="h-[550px]"></div>
         </div>
     </div>
 
     <script>
         let rawData = null;
         const MESES_ORDEM = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-        const CORES_ST = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF'];
+        
+        // PALETA EXATA DO STREAMLIT (Imagem 2)
+        const PALETA_ST = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52'];
 
         const fmtBR = v => (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         function toggleFilters() { const m = document.getElementById('filter-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block'; }
@@ -121,14 +123,9 @@
         function atualizarInterfacePorAno() {
             if(!rawData) return;
             const visao = document.getElementById('ano-select').value;
-            // Lógica de Meses Ativos: Marca apenas o que tem dados (Igual Streamlit)
             const ativos = (visao === "2025") ? rawData.meses_disponiveis_2025 : rawData.meses_disponiveis_2026;
-            
-            document.getElementById('meses-container').innerHTML = MESES_ORDEM
-                .filter(m => ativos.includes(m))
-                .map(m => `<label class="flex items-center gap-2 cursor-pointer py-1 hover:bg-white/5 rounded px-2"><input type="checkbox" value="${m}" checked onchange="renderUI()"> ${m}</label>`)
-                .join('');
-            
+            document.getElementById('meses-container').innerHTML = MESES_ORDEM.filter(m => ativos.includes(m))
+                .map(m => `<label class="flex items-center gap-2 cursor-pointer py-1 hover:bg-white/5 rounded px-2"><input type="checkbox" value="${m}" checked onchange="renderUI()"> ${m}</label>`).join('');
             renderUI();
         }
 
@@ -171,8 +168,11 @@
             atualizarKPI("des", totalD, null, null);
             atualizarKPI("res", totalR - totalD, null, null);
 
-            mainContainerHTML("Receitas", "Despesas");
-            
+            document.getElementById('main-charts-container').innerHTML = `
+                <div class="st-block"><div class="block-title">Receitas</div><div id="chart-1" class="h-[400px]"></div></div>
+                <div class="st-block"><div class="block-title">Despesas</div><div id="chart-2" class="h-[400px]"></div></div>
+            `;
+
             const rAgg = aggregate(r, 'Receita');
             const drAgg = aggregate(dr, 'Setor');
 
@@ -181,7 +181,6 @@
             renderTendencia(r, dr, meses);
             renderTopBarras(dd);
             
-            // Popular Tabelas
             fillTable('tab-receitas-body', rAgg);
             fillTable('tab-despesas-body', drAgg);
         }
@@ -190,7 +189,6 @@
             const d26 = rawData.ano_2026;
             const d25 = rawData.ano_2025;
             const somar = (lista) => lista.filter(d => meses.includes(d.Mes)).reduce((a,b) => a+b.Valor, 0);
-
             const tot26 = { r: somar(d26.receitas), d: somar(d26.despesas_res) };
             const tot25 = { r: somar(d25.receitas), d: somar(d25.despesas_res) };
 
@@ -212,17 +210,9 @@
 
             plot('c-fat', getS(d25.receitas, meses), getS(d26.receitas, meses), '#22c55e');
             plot('c-des', getS(d25.despesas_res, meses), getS(d26.despesas_res, meses), '#ff4b4b');
-            
             const res25 = meses.map(m => getS(d25.receitas, [m])[0] - getS(d25.despesas_res, [m])[0]);
             const res26 = meses.map(m => getS(d26.receitas, [m])[0] - getS(d26.despesas_res, [m])[0]);
             plot('c-res', res25, res26, '#3b82f6');
-        }
-
-        function mainContainerHTML(t1, t2) {
-            document.getElementById('main-charts-container').innerHTML = `
-                <div class="st-block"><div class="block-title">${t1}</div><div id="chart-1" class="h-[400px]"></div></div>
-                <div class="st-block"><div class="block-title">${t2}</div><div id="chart-2" class="h-[400px]"></div></div>
-            `;
         }
 
         function atualizarKPI(id, vP, vS, label) {
@@ -247,9 +237,22 @@
 
         function renderPie(div, data) {
             Plotly.newPlot(div, [{
-                values: Object.values(data), labels: Object.keys(data), type: 'pie', hole: 0.5,
-                marker: { colors: CORES_ST }, textinfo: 'percent', hovertemplate: '%{label}<br>R$ %{value:,.2f}<extra></extra>'
-            }], { showlegend: true, paper_bgcolor: 'transparent', font: {color: '#fff'}, margin: {l:10, r:10, t:10, b:50}, legend: {orientation: 'h', y: -0.2} }, {displayModeBar: false});
+                values: Object.values(data), labels: Object.keys(data), type: 'pie', hole: 0.55,
+                marker: { colors: PALETA_ST }, textinfo: 'percent', hovertemplate: '%{label}<br>R$ %{value:,.2f}<extra></extra>'
+            }], { 
+                showlegend: true, 
+                paper_bgcolor: 'transparent', 
+                font: { color: '#fff', size: 12 }, 
+                margin: { l: 0, r: 200, t: 30, b: 30 }, // Aumentada margem direita para a legenda
+                legend: { 
+                    x: 1.1, 
+                    y: 0.5, 
+                    xanchor: 'left', 
+                    yanchor: 'middle', 
+                    orientation: 'v',
+                    font: { size: 11 }
+                } 
+            }, {displayModeBar: false});
         }
 
         function renderTendencia(r, dr, meses) {
@@ -258,7 +261,11 @@
             Plotly.newPlot('chart-tendencia', [
                 { x: meses, y: f, name: 'Faturamento', line: {color: '#22c55e', width: 3}, mode: 'lines+markers' },
                 { x: meses, y: d, name: 'Despesas', line: {color: '#ff4b4b', width: 3}, mode: 'lines+markers' }
-            ], { paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: {color: '#fff'}, margin: {t:20, b:40, l:50, r:10}, legend: {orientation: 'h', y: -0.2} }, {displayModeBar: false});
+            ], { 
+                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', 
+                font: {color: '#fff'}, margin: {t:20, b:40, l:60, r:10}, 
+                legend: { orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center' } 
+            }, {displayModeBar: false});
         }
 
         function renderTopBarras(dd) {
