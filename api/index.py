@@ -20,7 +20,7 @@ app.add_middleware(
 )
 
 # =========================================================
-# CONSTANTES E CONFIGURAÇÕES (IDs das suas planilhas)
+# CONSTANTES E CONFIGURAÇÕES
 # =========================================================
 SHEET_ID_2026 = "1Bh2Xb1t5m7Si3HXgRVHkrQ5ALtsBRV_wTTU1G-EQo0A"
 SHEET_ID_2025 = "1JEruYIxHbwPlQS45oTFH60l3i4hqF_3idM2Vu8sFPHs"
@@ -30,12 +30,11 @@ MESES = [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ]
-MESES_MAP = {mes: i + 1 for i, mes in enumerate(MESES)}
 BLOCOS_DESPESA_EXATOS = {"DIVERSOS", "DESPESAS DIVERSAS", "ACESSÓRIOS", "ACESSORIOS", "INVESTIMENTOS"}
 BLOCOS_PARADA_GERAIS = {"RESULTADO", "RECEITAS", "TOTAL", "FATURAMENTO"}
 
 # =========================================================
-# FUNÇÕES DE TRATAMENTO DE DADOS (Suas funções originais)
+# FUNÇÕES DE TRATAMENTO DE DADOS
 # =========================================================
 def texto(v): 
     return str(v).strip() if pd.notna(v) else ""
@@ -102,14 +101,15 @@ def processar_planilha(xl):
         idx_fat = df[df["ColA"].str.upper() == "FATURAMENTO"].index
         if not idx_fat.empty:
             for k in range(idx_fat[0] + 1, len(df)):
-                if texto(df.loc[k, "ColA"]).upper() in BLOCOS_PARADA_GERAIS or eh_bloco_despesa(df.loc[k, "ColA"]): 
+                val_a = texto(df.loc[k, "ColA"]).upper()
+                if val_a in BLOCOS_PARADA_GERAIS or eh_bloco_despesa(val_a): 
                     break
                 
                 r_nome, r_val = texto(df.loc[k, "ColB"]), df.loc[k, "ColC"]
                 if r_nome and pd.notna(r_val) and r_val > 0:
                     receitas.append({"Mes": aba, "Receita": r_nome, "Valor": float(r_val)})
 
-    return pd.DataFrame(receitas), pd.DataFrame(despesas_res), pd.DataFrame(despesas_det)
+    return (pd.DataFrame(receitas), pd.DataFrame(despesas_res), pd.DataFrame(despesas_det))
 
 def carregar_dados(sheet_id):
     ts = int(time.time())
@@ -120,16 +120,16 @@ def carregar_dados(sheet_id):
     return processar_planilha(xl)
 
 # =========================================================
-# ENDPOINT (Ajustado para o Comparativo)
+# ENDPOINT PRINCIPAL
 # =========================================================
 @app.get("/api/data")
 async def get_financial_data():
     try:
-        # Carregando 2026 e 2025
+        # Carregando dados dos dois anos
         r26, dr26, dd26 = carregar_dados(SHEET_ID_2026)
         r25, dr25, dd25 = carregar_dados(SHEET_ID_2025)
 
-        # Identifica meses ativos (onde há faturamento real)
+        # Identifica meses que possuem faturamento (meses "vivos")
         m26 = r26[r26["Valor"] > 0]["Mes"].unique().tolist() if not r26.empty else []
         m25 = r25[r25["Valor"] > 0]["Mes"].unique().tolist() if not r25.empty else []
         
@@ -150,4 +150,9 @@ async def get_financial_data():
             "ultima_atualizacao": datetime.now(TIMEZONE_BRASILIA).strftime("%d/%m/%Y %H:%M:%S")
         }
     except Exception as e:
-        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+        return JSONResponse(
+            status_code=500, 
+            content={"status": "error", "message": str(e)}
+        )
+
+# Para rodar localmente: uvicorn main:app --reload
