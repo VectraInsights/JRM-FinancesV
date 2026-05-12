@@ -77,6 +77,13 @@
         <div id="main-charts-container" class="grid grid-cols-1 lg:grid-cols-2 gap-4 px-4">
             </div>
 
+        <div id="secao-tendencia" class="px-4 mt-4">
+            <div class="st-block">
+                <div class="block-title">Tendência Mensal</div>
+                <div id="chart-tendencia" class="h-80"></div>
+            </div>
+        </div>
+
         <div id="detalhe-despesas-container" class="st-block mx-4 mt-4">
             <div class="block-title">Top Despesas Detalhadas</div>
             <div id="chart-top" class="h-[500px]"></div>
@@ -86,12 +93,16 @@
     <script>
         let rawData = null;
         const MESES_ORDEM = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        const MAPA_CORES = {
+            "Correios": "#636EFA", "Fretes internos": "#EF553B", "Fretes diversos": "#00CC96",
+            "Rendimento sobre aplicações": "#AB63FA", "Administrativas": "#636EFA",
+            "Abastecimento/Descargas": "#EF553B", "Financiamentos/Imobilizados": "#00CC96",
+            "Diversos": "#AB63FA", "Mecânica": "#FFA15A", "Borracharia": "#19D3F3",
+            "Elétrica": "#FF6692", "Despesas Baú, Lanternagem, Funilaria e Pintura": "#B6E880", "Acessórios": "#FF97FF"
+        };
+
         const fmtBR = v => (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        
-        function toggleFilters() { 
-            const m = document.getElementById('filter-menu'); 
-            m.style.display = m.style.display === 'block' ? 'none' : 'block'; 
-        }
+        function toggleFilters() { const m = document.getElementById('filter-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block'; }
 
         async function carregarDados() {
             const res = await fetch(`/api/data`);
@@ -102,7 +113,6 @@
         function atualizarInterfacePorAno() {
             if(!rawData) return;
             const visao = document.getElementById('ano-select').value;
-            // Seleciona meses que têm dados no ano específico ou união no comparativo
             const ativos = (visao === "2025") ? rawData.meses_disponiveis_2025 : rawData.meses_disponiveis_2026;
             
             document.getElementById('meses-container').innerHTML = MESES_ORDEM
@@ -119,16 +129,19 @@
             const mesesSel = Array.from(document.querySelectorAll('#meses-container input:checked')).map(i => i.value);
             document.getElementById('display-periodo').innerHTML = `Período: ${mesesSel.join(', ')}`;
 
-            const container = document.getElementById('main-charts-container');
+            const mainContainer = document.getElementById('main-charts-container');
+            const tendenciaSecao = document.getElementById('secao-tendencia');
             const detContainer = document.getElementById('detalhe-despesas-container');
 
             if (visao === 'comparativo') {
-                detContainer.style.display = 'none'; // Some no comparativo
-                container.className = "grid grid-cols-1 lg:grid-cols-3 gap-4 px-4";
+                tendenciaSecao.style.display = 'none';
+                detContainer.style.display = 'none';
+                mainContainer.className = "grid grid-cols-1 lg:grid-cols-3 gap-4 px-4";
                 renderModoComparativo(mesesSel);
             } else {
-                detContainer.style.display = 'block'; // Aparece no individual
-                container.className = "grid grid-cols-1 lg:grid-cols-2 gap-4 px-4";
+                tendenciaSecao.style.display = 'block';
+                detContainer.style.display = 'block';
+                mainContainer.className = "grid grid-cols-1 lg:grid-cols-2 gap-4 px-4";
                 renderModoIndividual(visao, mesesSel);
             }
         }
@@ -153,6 +166,7 @@
 
             renderPie('chart-1', aggregate(r, 'Receita'));
             renderPie('chart-2', aggregate(dr, 'Setor'));
+            renderTendencia(r, dr, meses);
             renderTopBarras(dd);
         }
 
@@ -161,7 +175,6 @@
             const d25 = rawData.ano_2025;
 
             const somar = (lista) => lista.filter(d => meses.includes(d.Mes)).reduce((a,b) => a+b.Valor, 0);
-
             const tot26 = { r: somar(d26.receitas), d: somar(d26.despesas_res) };
             const tot25 = { r: somar(d25.receitas), d: somar(d25.despesas_res) };
 
@@ -175,21 +188,21 @@
                 <div class="st-block"><h3>Resultado</h3><div id="c-res" class="h-80"></div></div>
             `;
 
-            const getSeries = (dados, meses) => meses.map(m => dados.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
+            const getSeries = (dados, m) => m.map(mes => dados.filter(x => x.Mes === mes).reduce((a,b) => a+b.Valor, 0));
 
-            const plotComp = (id, s25, s26, label) => {
+            const plotComp = (id, s25, s26, cor26) => {
                 Plotly.newPlot(id, [
-                    { x: meses, y: s25, name: '2025', type: 'bar', marker: {color: '#636efa'} },
-                    { x: meses, y: s26, name: '2026', type: 'bar', marker: {color: '#00cc96'} }
+                    { x: meses, y: s25, name: '2025', type: 'bar', marker: {color: '#94A3B8'} },
+                    { x: meses, y: s26, name: '2026', type: 'bar', marker: {color: cor26} }
                 ], { barmode: 'group', paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: {color: '#fff'}, margin: {t:20, b:40, l:40, r:10}, showlegend: false }, {displayModeBar: false});
             };
 
-            plotComp('c-fat', getSeries(d25.receitas, meses), getSeries(d26.receitas, meses));
-            plotComp('c-des', getSeries(d25.despesas_res, meses), getSeries(d26.despesas_res, meses));
+            plotComp('c-fat', getSeries(d25.receitas, meses), getSeries(d26.receitas, meses), '#22c55e');
+            plotComp('c-des', getSeries(d25.despesas_res, meses), getSeries(d26.despesas_res, meses), '#ff4b4b');
             
             const res25 = meses.map(m => d25.receitas.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0) - d25.despesas_res.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
             const res26 = meses.map(m => d26.receitas.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0) - d26.despesas_res.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
-            plotComp('c-res', res25, res26);
+            plotComp('c-res', res25, res26, '#3b82f6');
         }
 
         function atualizarKPI(id, vPrincipal, vSub, labelSub) {
@@ -210,7 +223,16 @@
             Plotly.newPlot(div, [{
                 values: Object.values(data), labels: Object.keys(data), type: 'pie', hole: 0.6,
                 textinfo: 'percent', hovertemplate: '%{label}<br>R$ %{value:,.2f}<extra></extra>'
-            }], { showlegend: false, paper_bgcolor: 'transparent', font: {color: '#fff'}, margin: {l:10, r:10, t:10, b:10} }, {displayModeBar: false});
+            }], { showlegend: true, paper_bgcolor: 'transparent', font: {color: '#fff'}, margin: {l:10, r:10, t:10, b:50}, legend: {orientation: 'h', y: -0.2} }, {displayModeBar: false});
+        }
+
+        function renderTendencia(r, dr, meses) {
+            const f = meses.map(m => r.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
+            const d = meses.map(m => dr.filter(x => x.Mes === m).reduce((a,b) => a+b.Valor, 0));
+            Plotly.newPlot('chart-tendencia', [
+                { x: meses, y: f, name: 'Faturamento', line: {color: '#22c55e', width: 3}, mode: 'lines+markers' },
+                { x: meses, y: d, name: 'Despesas', line: {color: '#ff4b4b', width: 3}, mode: 'lines+markers' }
+            ], { paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: {color: '#fff'}, margin: {t:20, b:40, l:50, r:10}, legend: {orientation: 'h', y: -0.2} }, {displayModeBar: false});
         }
 
         function renderTopBarras(dd) {
